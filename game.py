@@ -1,3 +1,4 @@
+import asyncio
 import pygame
 import constants as C
 from world import World
@@ -38,7 +39,7 @@ class Game:
     #  Haupt-Loop                                                          #
     # ------------------------------------------------------------------ #
 
-    def run(self):
+    async def run(self):
         running = True
         while running:
             self.clock.tick(C.FPS)
@@ -57,6 +58,7 @@ class Game:
             self._update(keys)
             self._draw()
             pygame.display.flip()
+            await asyncio.sleep(0)
 
     # ------------------------------------------------------------------ #
     #  Input                                                               #
@@ -110,8 +112,12 @@ class Game:
         if self.state != GameState.PLAYING:
             return
 
+        # Welt horizontal expandieren bevor Spieler sich bewegt
+        player_tx = self.player.rect.centerx // C.TILE_SIZE
+        self.world.ensure_around(player_tx)
+
         self.player.update(keys)
-        self.camera.update(self.player.rect)
+        self.camera.update(self.player.rect, self.world)
 
         # Fluid-Simulation alle 6 Frames
         self._fluid_tick += 1
@@ -152,19 +158,16 @@ class Game:
 
     def _draw_world(self):
         first_row, last_row = self.camera.visible_tile_range()
+        first_col, last_col = self.camera.visible_col_range()
 
         for ty in range(first_row, last_row):
             screen_y = self.camera.world_to_screen_y(ty * C.TILE_SIZE)
-            for tx in range(self.world.width):
+            for tx in range(first_col, last_col):
                 tile = self.world.get(tx, ty)
                 if tile.kind == TileKind.AIR:
                     continue
-                rect = pygame.Rect(
-                    tx * C.TILE_SIZE,
-                    screen_y,
-                    C.TILE_SIZE,
-                    C.TILE_SIZE,
-                )
+                screen_x = self.camera.world_to_screen_x(tx * C.TILE_SIZE)
+                rect = pygame.Rect(screen_x, screen_y, C.TILE_SIZE, C.TILE_SIZE)
                 pygame.draw.rect(self.screen, tile.color, rect)
                 pygame.draw.rect(self.screen, (0, 0, 0), rect, 1)
 
@@ -172,7 +175,7 @@ class Game:
                     glow = pygame.Surface((C.TILE_SIZE - 6, C.TILE_SIZE - 6), pygame.SRCALPHA)
                     glow.fill((*tile.color[:3], 80))
                     inner = pygame.Rect(
-                        tx * C.TILE_SIZE + 3,
+                        screen_x + 3,
                         screen_y + 3,
                         C.TILE_SIZE - 6,
                         C.TILE_SIZE - 6,

@@ -11,6 +11,7 @@ class TestCamera:
     def test_initial_offset_zero(self):
         cam = Camera()
         assert cam.offset_y == 0.0
+        assert cam.offset_x == 0.0
 
     def test_visible_range_at_top(self):
         cam = Camera()
@@ -19,18 +20,31 @@ class TestCamera:
         assert last > 0
         assert last <= C.WORLD_HEIGHT
 
-    def test_apply_shifts_rect(self):
+    def test_apply_shifts_rect_vertically(self):
         cam = Camera()
         cam.offset_y = 100.0
         rect = pygame.Rect(0, 200, 32, 32)
         result = cam.apply(rect)
         assert result.y == 200 - 100
 
+    def test_apply_shifts_rect_horizontally(self):
+        cam = Camera()
+        cam.offset_x = 64.0
+        rect = pygame.Rect(200, 0, 32, 32)
+        result = cam.apply(rect)
+        assert result.x == 200 - 64
+
     def test_camera_follows_player_downward(self):
         cam = Camera()
         player_rect = pygame.Rect(0, C.SCREEN_HEIGHT * 2, 24, 28)
         cam.update(player_rect)
         assert cam.offset_y > 0
+
+    def test_camera_follows_player_right(self):
+        cam = Camera()
+        player_rect = pygame.Rect(C.SCREEN_WIDTH * 3, 0, 24, 28)
+        cam.update(player_rect)
+        assert cam.offset_x > 0
 
     def test_camera_never_goes_above_zero(self):
         cam = Camera()
@@ -51,6 +65,17 @@ class TestCamera:
         cam = Camera()
         cam.offset_y = 64.0
         assert cam.world_to_screen_y(128) == 64
+
+    def test_world_to_screen_x(self):
+        cam = Camera()
+        cam.offset_x = 32.0
+        assert cam.world_to_screen_x(96) == 64
+
+    def test_visible_col_range(self):
+        cam = Camera()
+        cam.offset_x = 0.0
+        first, last = cam.visible_col_range()
+        assert last - first >= C.SCREEN_WIDTH // C.TILE_SIZE
 
 
 # ------------------------------------------------------------------ #

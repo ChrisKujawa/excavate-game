@@ -9,110 +9,117 @@ from tile import (
 
 class World:
     def __init__(self, seed: int = None):
-        self.width = C.WORLD_WIDTH
+        self.seed = seed if seed is not None else random.randint(0, 999999)
         self.height = C.WORLD_HEIGHT
-        self.rng = random.Random(seed)
-        self.grid: list[list[Tile]] = []
-        self._generate()
+        self._tiles: dict[tuple[int, int], Tile] = {}
+        self.min_tx: int = 0
+        self.max_tx: int = 0   # exclusive: columns are [min_tx, max_tx)
+
+        # Generate initial columns centred around x=0
+        half = C.WORLD_INITIAL_WIDTH // 2
+        self._generate_cols(-half, half)
+        self._place_diamond(0, self.height - 5)
 
     # ------------------------------------------------------------------ #
-    #  Öffentliche Methoden                                                #
+    #  Public API                                                          #
     # ------------------------------------------------------------------ #
 
-    def get(self, tx: int, ty: int) -> Tile:
-        if 0 <= tx < self.width and 0 <= ty < self.height:
-            return self.grid[ty][tx]
-        return make_air()
-
-    def set(self, tx: int, ty: int, tile: Tile):
-        if 0 <= tx < self.width and 0 <= ty < self.height:
-            self.grid[ty][tx] = tile
-
-    def remove(self, tx: int, ty: int):
-        """Tile abbauen → wird zu Luft."""
-        self.set(tx, ty, make_air())
-
-    def tick_fluids(self):
-        """Lässt Wasser und Lava nach unten fließen (von unten nach oben scannen)."""
-        fluid_kinds = (TileKind.WATER, TileKind.LAVA)
-        # Von unten nach oben damit Fluid in einem Tick mehrere Felder fällt
-        for ty in range(self.height - 2, self.surface_y() - 1, -1):
-            for tx in range(self.width):
-                tile = self.grid[ty][tx]
-                if tile.kind not in fluid_kinds:
-                    continue
-                below = self.grid[ty + 1][tx]
-                if below.kind == TileKind.AIR:
-                    self.grid[ty + 1][tx] = tile
-                    self.grid[ty][tx] = make_air()
+    @property
+    def width(self) -> int:
+        return self.max_tx - self.min_tx
 
     def surface_y(self) -> int:
-        """Y-Position der Oberfläche in Tiles."""
-        return 2  # erste 2 Reihen sind Luft/Himmel
+        return 2
+
+    def get(self, tx: int, ty: int) -> Tile:
+        if ty < 0 or ty >= self.height:
+            return make_air()
+        return self._tiles.get((tx, ty), make_air())
+
+    def set(self, tx: int, ty: int, tile: Tile):
+        if 0 <= ty < self.height:
+            self._tiles[(tx, ty)] = tile
+
+    def remove(self, tx: int, ty: int):
+        self.set(tx, ty, make_air())
+
+    def ensure_around(self, tx: int, padding: int = C.WORLD_EXPAND_THRESHOLD):
+        """Expand world left/right if player is within padding tiles of the edge."""
+        if tx - padding < self.min_tx:
+            new_from = self.min_tx - C.WORLD_EXPAND_AMOUNT
+            self._generate_cols(new_from, self.min_tx)
+        if tx + padding >= self.max_tx:
+            new_to = self.max_tx + C.WORLD_EXPAND_AMOUNT
+            self._generate_cols(self.max_tx, new_to)
+
+    def tick_fluids(self):
+        fluid_kinds = (TileKind.WATER, TileKind.LAVA)
+        for ty in range(self.height - 2, self.surface_y() - 1, -1):
+            for tx in range(self.min_tx, self.max_tx):
+                tile = self._tiles.get((tx, ty))
+                if tile is None or tile.kind not in fluid_kinds:
+                    continue
+                below = self._tiles.get((tx, ty + 1))
+                if below is not None and below.kind == TileKind.AIR:
+                    self._tiles[(tx, ty + 1)] = tile
+                    self._tiles[(tx, ty)] = make_air()
 
     # ------------------------------------------------------------------ #
-    #  Generierung                                                         #
+    #  Generation                                                          #
     # ------------------------------------------------------------------ #
 
-    def _generate(self):
-        # 1) Grundgerüst: Alle Tiles nach Zone füllen
-        self.grid = []
-        for ty in range(self.height):
-            row = []
-            for tx in range(self.width):
-                if ty < self.surface_y():
-                    row.append(make_air())
-                elif ty >= self.height - 2:
-                    row.append(make_bedrock())   # unzerstörbarer Boden
-                else:
-                    zi = get_zone_index(ty)
-                    tile = self._maybe_resource(tx, ty, zi)
-                    row.append(tile)
-            self.grid.append(row)
+    def _col_rng(self, tx: int) -> random.Random:
+        """Deterministic RNG per column (independent of generation order)."""
+        return random.Random((self.seed ^ (tx * 2654435761)) & 0xFFFFFFFF)
 
-        # 2) Riesigen Diamant am Boden platzieren (Mitte)
-        diamond_x = self.width // 2
-        diamond_y = self.height - 5   # 2 Reihen Abstand zum Bedrock
-        self.grid[diamond_y][diamond_x] = make_diamond()
-        # Diamant ist 3x3 groß damit man ihn gut sieht
-        for dy in range(-1, 2):
-            for dx in range(-1, 2):
-                nx, ny = diamond_x + dx, diamond_y + dy
-                if 0 <= nx < self.width and 0 <= ny < self.height - 2:
-                    if not (dx == 0 and dy == 0):
-                        self.grid[ny][nx] = make_diamond()
-
-        # 3) Höhlen einstreuen
-        self._generate_caves()
-
-    def _maybe_resource(self, tx: int, ty: int, zone_index: int) -> Tile:
-        """Gibt entweder eine Ressource oder normalen Untergrund zurück."""
+    def _make_tile(self, tx: int, ty: int, rng: random.Random) -> Tile:
+        if ty < self.surface_y():
+            return make_air()
+        if ty >= self.height - 2:
+            return make_bedrock()
+        zi = get_zone_index(ty)
         for res_name, res in C.RESOURCES.items():
-            prob = res["prob"][zone_index]
-            if prob > 0 and self.rng.random() < prob:
-                return make_resource(res_name, zone_index)
-        return make_ground(zone_index)
+            prob = res["prob"][zi]
+            if prob > 0 and rng.random() < prob:
+                return make_resource(res_name, zi)
+        return make_ground(zi)
 
-    def _generate_caves(self):
-        for _ in range(C.CAVE_COUNT):
-            # Höhlen nur ab Tiefe 5 damit man nicht sofort reinfällt
-            cx = self.rng.randint(2, self.width - 3)
-            cy = self.rng.randint(5, self.height - 10)
-            w  = self.rng.randint(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE)
-            h  = self.rng.randint(C.CAVE_MIN_SIZE, max(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE // 2))
+    def _generate_cols(self, from_tx: int, to_tx: int):
+        """Generate columns [from_tx, to_tx) and update bounds."""
+        for tx in range(from_tx, to_tx):
+            rng = self._col_rng(tx)
+            for ty in range(self.height):
+                self._tiles[(tx, ty)] = self._make_tile(tx, ty, rng)
+        self._generate_caves_for(from_tx, to_tx)
+        self.min_tx = min(self.min_tx, from_tx)
+        self.max_tx = max(self.max_tx, to_tx)
 
-            cave_type = self.rng.choices(
-                ["empty", "water", "lava"],
-                weights=[60, 25, 15],
-            )[0]
-
+    def _generate_caves_for(self, from_tx: int, to_tx: int):
+        region_width = to_tx - from_tx
+        num_caves = max(1, round(region_width * C.CAVE_COUNT / C.WORLD_INITIAL_WIDTH))
+        rng = random.Random((self.seed ^ (from_tx * 777 + to_tx * 333)) & 0xFFFFFFFF)
+        for _ in range(num_caves):
+            cx = rng.randint(from_tx, to_tx - 1)
+            cy = rng.randint(5, self.height - 10)
+            w  = rng.randint(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE)
+            h  = rng.randint(C.CAVE_MIN_SIZE, max(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE // 2))
+            cave_type = rng.choices(["empty", "water", "lava"], weights=[60, 25, 15])[0]
             for dy in range(h):
                 for dx in range(w):
                     nx, ny = cx + dx, cy + dy
-                    if 0 <= nx < self.width and 0 <= ny < self.height:
+                    if 0 <= ny < self.height - 2:
                         if cave_type == "empty":
-                            self.grid[ny][nx] = make_air()
+                            self._tiles[(nx, ny)] = make_air()
                         elif cave_type == "water":
-                            self.grid[ny][nx] = make_water()
+                            self._tiles[(nx, ny)] = make_water()
                         else:
-                            self.grid[ny][nx] = make_lava()
+                            self._tiles[(nx, ny)] = make_lava()
+
+    def _place_diamond(self, cx: int, cy: int):
+        """Place a 3×3 diamond cluster at (cx, cy)."""
+        for dy in range(-1, 2):
+            for dx in range(-1, 2):
+                nx, ny = cx + dx, cy + dy
+                if 0 <= ny < self.height - 2:
+                    self._tiles[(nx, ny)] = make_diamond()
+

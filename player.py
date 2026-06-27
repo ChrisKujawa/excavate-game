@@ -7,11 +7,11 @@ class Player:
     def __init__(self, world):
         self.world = world
         # Spawn an der Oberfläche, horizontal zentriert
-        spawn_tx = C.WORLD_WIDTH // 2
+        # Spawn at world centre (x=0), just above surface
         spawn_ty = world.surface_y()
         self.rect = pygame.Rect(
-            spawn_tx * C.TILE_SIZE + (C.TILE_SIZE - C.PLAYER_WIDTH) // 2,
-            spawn_ty * C.TILE_SIZE - C.PLAYER_HEIGHT,  # just above first solid row
+            (C.TILE_SIZE - C.PLAYER_WIDTH) // 2,   # x=0 centre
+            spawn_ty * C.TILE_SIZE - C.PLAYER_HEIGHT,
             C.PLAYER_WIDTH,
             C.PLAYER_HEIGHT,
         )
@@ -117,8 +117,9 @@ class Player:
             direction = "left" if dx < 0 else "right"
             self.try_dig(direction)
 
-        # Weltgrenzen
-        self.rect.x = max(0, min(self.rect.x, (C.WORLD_WIDTH * C.TILE_SIZE) - self.rect.width))
+        # Weltgrenzen (links: nicht vor den generierten Bereich)
+        left_limit = self.world.min_tx * C.TILE_SIZE
+        self.rect.x = max(left_limit, self.rect.x)
 
     def _apply_gravity(self):
         self.vel_y += C.GRAVITY

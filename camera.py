@@ -3,31 +3,45 @@ import constants as C
 
 
 class Camera:
-    """Verfolgt den Spieler vertikal und berechnet den sichtbaren Bereich."""
+    """Verfolgt den Spieler horizontal und vertikal."""
 
     def __init__(self):
-        self.offset_y: float = 0.0  # in Pixeln
+        self.offset_x: float = 0.0
+        self.offset_y: float = 0.0
 
-    def update(self, player_rect: pygame.Rect):
-        # Spieler vertikal zentrieren
+    def update(self, player_rect: pygame.Rect, world=None):
+        # --- Vertikal ---
         target_y = player_rect.centery - C.SCREEN_HEIGHT // 2
-        # Sanftes Folgen
         self.offset_y += (target_y - self.offset_y) * (1 - C.CAMERA_LAG)
-        # Nicht über den oberen Rand hinaus
         self.offset_y = max(0, self.offset_y)
-        # Nicht unter den unteren Rand
-        max_offset = C.WORLD_HEIGHT * C.TILE_SIZE - C.SCREEN_HEIGHT
-        self.offset_y = min(self.offset_y, max_offset)
+        max_offset_y = C.WORLD_HEIGHT * C.TILE_SIZE - C.SCREEN_HEIGHT
+        self.offset_y = min(self.offset_y, max_offset_y)
+
+        # --- Horizontal ---
+        target_x = player_rect.centerx - C.SCREEN_WIDTH // 2
+        self.offset_x += (target_x - self.offset_x) * (1 - C.CAMERA_LAG)
+        # Nicht vor den linken Weltrand scrollen
+        if world is not None:
+            min_x = world.min_tx * C.TILE_SIZE
+            self.offset_x = max(min_x, self.offset_x)
 
     def apply(self, rect: pygame.Rect) -> pygame.Rect:
-        """Gibt das Rect mit angewendetem Kamera-Offset zurück."""
-        return rect.move(0, -int(self.offset_y))
+        return rect.move(-int(self.offset_x), -int(self.offset_y))
 
     def world_to_screen_y(self, world_y: int) -> int:
         return world_y - int(self.offset_y)
 
+    def world_to_screen_x(self, world_x: int) -> int:
+        return world_x - int(self.offset_x)
+
     def visible_tile_range(self) -> tuple[int, int]:
-        """Gibt erste und letzte sichtbare Tile-Reihe zurück."""
+        """Sichtbare Tile-Reihen (vertikal)."""
         first = max(0, int(self.offset_y) // C.TILE_SIZE - 1)
         last  = min(C.WORLD_HEIGHT, first + C.SCREEN_HEIGHT // C.TILE_SIZE + 3)
+        return first, last
+
+    def visible_col_range(self) -> tuple[int, int]:
+        """Sichtbare Tile-Spalten (horizontal)."""
+        first = int(self.offset_x) // C.TILE_SIZE - 1
+        last  = first + C.SCREEN_WIDTH // C.TILE_SIZE + 3
         return first, last
