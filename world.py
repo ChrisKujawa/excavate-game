@@ -32,6 +32,20 @@ class World:
         """Tile abbauen → wird zu Luft."""
         self.set(tx, ty, make_air())
 
+    def tick_fluids(self):
+        """Lässt Wasser und Lava nach unten fließen (von unten nach oben scannen)."""
+        fluid_kinds = (TileKind.WATER, TileKind.LAVA)
+        # Von unten nach oben damit Fluid in einem Tick mehrere Felder fällt
+        for ty in range(self.height - 2, self.surface_y() - 1, -1):
+            for tx in range(self.width):
+                tile = self.grid[ty][tx]
+                if tile.kind not in fluid_kinds:
+                    continue
+                below = self.grid[ty + 1][tx]
+                if below.kind == TileKind.AIR:
+                    self.grid[ty + 1][tx] = tile
+                    self.grid[ty][tx] = make_air()
+
     def surface_y(self) -> int:
         """Y-Position der Oberfläche in Tiles."""
         return 2  # erste 2 Reihen sind Luft/Himmel

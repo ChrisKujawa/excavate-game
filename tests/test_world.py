@@ -1,7 +1,7 @@
 """Tests für world.py – Welt-Generierung."""
 import pytest
 from world import World
-from tile import TileKind
+from tile import TileKind, make_water, make_lava, make_ground
 import constants as C
 
 
@@ -121,3 +121,66 @@ class TestWorldCaves:
             if world.get(tx, ty).kind == TileKind.AIR
         )
         assert air_underground > 0
+
+
+class TestFluidSimulation:
+    def _make_fresh_world(self):
+        w = World(seed=1)
+        # Leere die ganze Welt unterhalb der Oberfläche für kontrollierte Tests
+        from tile import make_air
+        for ty in range(w.surface_y(), w.height):
+            for tx in range(w.width):
+                w.grid[ty][tx] = make_air()
+        return w
+
+    def test_water_falls_into_air_below(self):
+        w = self._make_fresh_world()
+        w.set(5, 10, make_water())   # Wasser oben
+        # darunter bleibt Luft (schon gelöscht)
+        w.tick_fluids()
+        assert w.get(5, 11).kind == TileKind.WATER
+        assert w.get(5, 10).kind == TileKind.AIR
+
+    def test_lava_falls_into_air_below(self):
+        w = self._make_fresh_world()
+        w.set(5, 10, make_lava())
+        w.tick_fluids()
+        assert w.get(5, 11).kind == TileKind.LAVA
+        assert w.get(5, 10).kind == TileKind.AIR
+
+    def test_fluid_does_not_fall_through_solid(self):
+        from tile import make_ground
+        w = self._make_fresh_world()
+        w.set(5, 10, make_water())
+        w.set(5, 11, make_ground(0))   # solide Tile darunter
+        w.tick_fluids()
+        assert w.get(5, 10).kind == TileKind.WATER   # bleibt oben
+        assert w.get(5, 11).kind == TileKind.GROUND  # Stein bleibt
+
+    def test_fluid_falls_multiple_tiles(self):
+        """Mehrere tick_fluids-Aufrufe lassen Fluid weiter fallen."""
+        w = self._make_fresh_world()
+        w.set(5, 10, make_water())
+        for _ in range(5):
+            w.tick_fluids()
+        # Nach 5 Ticks sollte Wasser mindestens 5 Felder tiefer sein
+        assert w.get(5, 10).kind == TileKind.AIR
+        assert w.get(5, 15).kind == TileKind.WATER
+
+    def test_water_stays_if_no_air_below(self):
+        from tile import make_ground
+        w = self._make_fresh_world()
+        w.set(5, 10, make_water())
+        # Fülle alles darunter mit Stein
+        for ty in range(11, 20):
+            w.set(5, ty, make_ground(0))
+        w.tick_fluids()
+        assert w.get(5, 10).kind == TileKind.WATER  # bleibt
+
+    def test_fluid_does_not_exceed_world_bottom(self):
+        w = self._make_fresh_world()
+        bottom = w.height - 1
+        w.set(5, bottom, make_water())
+        w.tick_fluids()   # darf nicht crashen
+        # Fluid bleibt am Boden (nichts darunter)
+        assert w.get(5, bottom).kind == TileKind.WATER

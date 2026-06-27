@@ -32,6 +32,7 @@ class Game:
         self.player = Player(self.world)
         self.camera = Camera()
         self.input_name = ""
+        self._fluid_tick = 0
 
     # ------------------------------------------------------------------ #
     #  Haupt-Loop                                                          #
@@ -111,6 +112,12 @@ class Game:
 
         self.player.update(keys)
         self.camera.update(self.player.rect)
+
+        # Fluid-Simulation alle 6 Frames
+        self._fluid_tick += 1
+        if self._fluid_tick >= 6:
+            self._fluid_tick = 0
+            self.world.tick_fluids()
 
         if not self.player.alive and self.state == GameState.PLAYING:
             self.state = GameState.GAME_OVER
