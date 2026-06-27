@@ -1,8 +1,11 @@
+import sys
+
 # Bildschirm
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 FPS = 60
 TITLE = "Excavate Game"
+IS_WEB = sys.platform == "emscripten"
 
 # Tile-Größe in Pixeln
 TILE_SIZE = 32

@@ -102,7 +102,9 @@ class Game:
     # ------------------------------------------------------------------ #
 
     def _handle_touch_nav(self, event):
-        """Tap-to-start / tap-to-restart for touch screens."""
+        """Tap-to-start / tap-to-restart for touch screens (web only)."""
+        if not C.IS_WEB:
+            return
         if event.type not in (pygame.FINGERDOWN, pygame.MOUSEBUTTONDOWN):
             return
         if self.state == GameState.START:
@@ -207,7 +209,8 @@ class Game:
         self._draw_world()
         self._draw_player()
         self._draw_hud()
-        self.touch.draw(self.screen)
+        if C.IS_WEB:
+            self.touch.draw(self.screen)
 
         if self.state == GameState.GAME_OVER:
             self.ui.draw_game_over(self.screen, self.player.points)
