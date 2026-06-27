@@ -32,6 +32,46 @@ jobs:
       - name: Build with pygbag
         run: pygbag --build main.py
 
+      - name: Style loading screen
+        run: |
+          python3 - << 'EOF'
+          with open("build/web/index.html", "r") as f:
+              html = f.read()
+
+          style = """<style>
+            body {
+              background: #0a0a1e !important;
+              margin: 0;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              font-family: monospace !important;
+            }
+            body::before {
+              content: "⛏ EXCAVATE!";
+              display: block;
+              color: #ffd700;
+              font-size: 2rem;
+              font-family: monospace;
+              font-weight: bold;
+              letter-spacing: 0.15em;
+              margin-bottom: 1rem;
+            }
+            canvas { border: 2px solid #ffd700 !important; }
+            div, p, span, td, th { color: #ffd700 !important; font-family: monospace !important; }
+            a { color: #64a0dc !important; }
+            progress, meter { accent-color: #ffd700 !important; }
+            table { background: #0a0a1e !important; }
+          </style>"""
+
+          html = html.replace("</head>", style + "\n</head>", 1)
+
+          with open("build/web/index.html", "w") as f:
+              f.write(html)
+          EOF
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
