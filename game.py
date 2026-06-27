@@ -71,38 +71,45 @@ class Game:
         while running:
             self.clock.tick(C.FPS)
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
+            try:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
 
-                # Any user interaction starts the game from the start screen
-                if self.state == GameState.START and event.type in (
-                    pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
-                    pygame.FINGERDOWN, pygame.FINGERUP,
-                ):
-                    self.state = GameState.PLAYING
+                    # Any user interaction starts the game from the start screen
+                    if self.state == GameState.START and event.type in (
+                        pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
+                        pygame.FINGERDOWN, pygame.FINGERUP,
+                    ):
+                        self.state = GameState.PLAYING
 
-                if event.type == pygame.KEYDOWN:
-                    running = self._handle_keydown(event)
-                if event.type == pygame.TEXTINPUT:
-                    if self.state == GameState.NAME_INPUT:
-                        if len(self.input_name) < 12:
-                            self.input_name += event.text
-                self.touch.handle_event(event)
-                self._handle_touch_nav(event)
+                    if event.type == pygame.KEYDOWN:
+                        running = self._handle_keydown(event)
+                    if event.type == pygame.TEXTINPUT:
+                        if self.state == GameState.NAME_INPUT:
+                            if len(self.input_name) < 12:
+                                self.input_name += event.text
+                    self.touch.handle_event(event)
+                    self._handle_touch_nav(event)
 
-            # One-shot touch actions (jump, dig)
-            for action in self.touch.consume_just_pressed():
-                if self.state == GameState.PLAYING:
-                    if action == "jump":
-                        self.player.jump()
-                    elif action == "dig_down":
-                        self.player.try_dig("down")
+                # One-shot touch actions (jump, dig)
+                for action in self.touch.consume_just_pressed():
+                    if self.state == GameState.PLAYING:
+                        if action == "jump":
+                            self.player.jump()
+                        elif action == "dig_down":
+                            self.player.try_dig("down")
 
-            keys = _KeysWithTouch(pygame.key.get_pressed(), self.touch)
-            self._update(keys)
-            self._draw()
-            pygame.display.flip()
+                keys = _KeysWithTouch(pygame.key.get_pressed(), self.touch)
+                self._update(keys)
+                self._draw()
+                pygame.display.flip()
+            except Exception as e:
+                import traceback
+                print("GAME LOOP ERROR:", e)
+                traceback.print_exc()
+                # Don't kill the loop — keep running so the screen stays visible
+
             await asyncio.sleep(0)
 
     # ------------------------------------------------------------------ #
