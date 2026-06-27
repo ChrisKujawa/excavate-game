@@ -74,6 +74,14 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+
+                # Any user interaction starts the game from the start screen
+                if self.state == GameState.START and event.type in (
+                    pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
+                    pygame.FINGERDOWN, pygame.FINGERUP,
+                ):
+                    self.state = GameState.PLAYING
+
                 if event.type == pygame.KEYDOWN:
                     running = self._handle_keydown(event)
                 if event.type == pygame.TEXTINPUT:

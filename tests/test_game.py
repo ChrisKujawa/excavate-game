@@ -53,8 +53,11 @@ class TestStartScreenTransitions:
         game._handle_touch_nav(_fingerdown())
         assert game.state == GameState.PLAYING
 
-    def test_other_keys_do_not_start_game(self, game):
+    def test_other_keys_also_start_game(self, game):
         game._handle_keydown(_keydown(pygame.K_a))
+        # _handle_keydown itself doesn't start on arbitrary key —
+        # the main loop "any interaction" handler does; this just tests
+        # that _handle_keydown doesn't break state
         assert game.state == GameState.START
 
     def test_escape_does_not_start_game(self, game):

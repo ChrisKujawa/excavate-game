@@ -39,31 +39,19 @@ jobs:
               html = f.read()
 
           style = """<style>
+            /* Loading screen background + text theme */
             body {
               background: #0a0a1e !important;
-              margin: 0;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              min-height: 100vh;
               font-family: monospace !important;
             }
-            body::before {
-              content: "⛏ EXCAVATE!";
-              display: block;
-              color: #ffd700;
-              font-size: 2rem;
-              font-family: monospace;
-              font-weight: bold;
-              letter-spacing: 0.15em;
-              margin-bottom: 1rem;
-            }
-            canvas { border: 2px solid #ffd700 !important; }
+            /* DO NOT set display:flex or position on body — pygbag uses
+               position:absolute canvas that fills the viewport */
             div, p, span, td, th { color: #ffd700 !important; font-family: monospace !important; }
             a { color: #64a0dc !important; }
             progress, meter { accent-color: #ffd700 !important; }
             table { background: #0a0a1e !important; }
+            /* DO NOT add border/padding to canvas — pygbag explicitly warns
+               this breaks mouse coordinate mapping */
           </style>"""
 
           html = html.replace("</head>", style + "\n</head>", 1)
