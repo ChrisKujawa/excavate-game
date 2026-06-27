@@ -5,12 +5,12 @@ _BAR_H = 115  # height of the dedicated control strip at the bottom
 
 
 class _Button:
-    def __init__(self, icon, sub_label, action):
-        self.icon = icon
+    def __init__(self, direction, sub_label, action):
+        self.direction = direction  # "left" | "right" | "up" | "down"
         self.sub_label = sub_label
-        self.action = action
-        self.rect = pygame.Rect(0, 0, 0, 0)  # computed dynamically
-        self.pressed = False
+        self.action    = action
+        self.rect      = pygame.Rect(0, 0, 0, 0)
+        self.pressed   = False
 
 
 class TouchControls:
@@ -21,10 +21,10 @@ class TouchControls:
 
     def __init__(self):
         self.buttons = [
-            _Button("◄", "LEFT",  "left"),
-            _Button("►", "RIGHT", "right"),
-            _Button("▼", "DIG",   "dig_down"),
-            _Button("▲", "JUMP",  "jump"),
+            _Button("left",  "LEFT",  "left"),
+            _Button("right", "RIGHT", "right"),
+            _Button("down",  "DIG",   "dig_down"),
+            _Button("up",    "JUMP",  "jump"),
         ]
         self._touches: dict = {}
         self._prev:    dict = {b.action: False for b in self.buttons}
@@ -64,8 +64,8 @@ class TouchControls:
 
     def _get_fonts(self):
         if self._font_icon is None:
-            self._font_icon = pygame.font.SysFont("monospace", 34, bold=True)
-            self._font_sub  = pygame.font.SysFont("monospace", 12)
+            self._font_icon = pygame.font.SysFont("monospace", 12)
+            self._font_sub  = self._font_icon
         return self._font_icon, self._font_sub
 
     # ------------------------------------------------------------------ #
@@ -142,11 +142,20 @@ class TouchControls:
             surface.blit(bg, btn.rect.topleft)
             pygame.draw.rect(surface, border, btn.rect, 2, border_radius=12)
 
-            # Icon — shifted slightly up to leave room for sub-label
-            icon_surf = f_icon.render(btn.icon, True, fg)
-            icon_x = btn.rect.centerx - icon_surf.get_width() // 2
-            icon_y = btn.rect.top + (btn.rect.height - icon_surf.get_height()) // 2 - 8
-            surface.blit(icon_surf, (icon_x, icon_y))
+            # Arrow triangle
+            cx2 = btn.rect.centerx
+            cy2 = btn.rect.top + (btn.rect.height - sub_surf.get_height() - 5) // 2
+            s = min(btn.rect.width, btn.rect.height) // 4
+            d = btn.direction
+            if d == "left":
+                pts = [(cx2 - s, cy2), (cx2 + s, cy2 - s), (cx2 + s, cy2 + s)]
+            elif d == "right":
+                pts = [(cx2 + s, cy2), (cx2 - s, cy2 - s), (cx2 - s, cy2 + s)]
+            elif d == "up":
+                pts = [(cx2, cy2 - s), (cx2 - s, cy2 + s), (cx2 + s, cy2 + s)]
+            else:  # down
+                pts = [(cx2, cy2 + s), (cx2 - s, cy2 - s), (cx2 + s, cy2 - s)]
+            pygame.draw.polygon(surface, fg, pts)
 
             # Sub-label at the bottom of the button
             sub_surf = f_sub.render(btn.sub_label, True, sub_fg)

@@ -197,7 +197,7 @@ class Player:
             threshold = C.UPGRADE_THRESHOLDS[self.pickaxe_level]
             if self.points >= threshold:
                 self.pickaxe_level += 1
-                self._show_feedback(f"🎉 Spitzhacke Level {self.pickaxe_level}!")
+                self._show_feedback(f">> Spitzhacke Level {self.pickaxe_level}!")
 
     # ------------------------------------------------------------------ #
     #  Hilfsmethoden                                                       #
