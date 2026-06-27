@@ -41,7 +41,11 @@ RESOURCES = {
     "platin":   {"points": 250,  "color": (200, 220, 240), "prob": [0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.03, 0.02, 0.01]},
     "opal":     {"points": 400,  "color": (255, 160, 210), "prob": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.03, 0.02]},
     "amethyst": {"points": 600,  "color": (150, 50,  200), "prob": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.02, 0.03]},
+    # Fossilien – seltenste und wertvollste Ressource (nur in den tiefsten Zonen)
+    "fossil":   {"points": 1000, "color": (240, 225, 170), "prob": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.01, 0.015, 0.02]},
 }
+
+PLAYER_NAME = "TEC"
 
 # Höhlen
 CAVE_COUNT = 10       # pro WORLD_INITIAL_WIDTH Spalten

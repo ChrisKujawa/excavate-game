@@ -84,39 +84,72 @@ class UI:
     def draw_start_screen(self, surface: pygame.Surface):
         surface.fill((10, 10, 30))
 
+        cx = C.SCREEN_WIDTH // 2
+
+        # --- TEC Charakter links oben ---
+        self._draw_tec_character(surface, 100, 110, scale=2)
+
+        # --- Titel ---
         title = self.font_large.render("EXCAVATE!", True, (255, 215, 0))
         sub   = self.font_medium.render("Grab dich zum großen Diamanten!", True, C.COLOR_WHITE)
         hint  = self.font_small.render("Drücke ENTER zum Starten", True, (180, 180, 180))
 
+        surface.blit(title, (cx - title.get_width() // 2, 55))
+        surface.blit(sub,   (cx - sub.get_width()   // 2, 105))
+
+        # --- Steuerung ---
         controls = [
-            "← →   Bewegen",
-            "↑ / SPACE   Springen",
-            "↓   Nach unten graben",
-            "Q   Links graben   E   Rechts graben",
-            "R   Neustart",
+            "← →        Bewegen / Graben",
+            "↑ / SPACE  Springen",
+            "↓           Nach unten graben",
+            "R           Neustart",
         ]
-
-        cx = C.SCREEN_WIDTH // 2
-        surface.blit(title, (cx - title.get_width() // 2, 80))
-        surface.blit(sub,   (cx - sub.get_width()   // 2, 140))
-
-        # Steuerung Box
-        box_y = 210
+        ctrl_y = 155
+        ctrl_title = self.font_small.render("── Steuerung ──", True, (180, 180, 255))
+        surface.blit(ctrl_title, (cx - ctrl_title.get_width() // 2, ctrl_y))
         for i, line in enumerate(controls):
             s = self.font_small.render(line, True, (200, 200, 255))
-            surface.blit(s, (cx - s.get_width() // 2, box_y + i * 26))
+            surface.blit(s, (cx - s.get_width() // 2, ctrl_y + 22 + i * 22))
 
-        # Highscores
+        # --- Highscores ---
         scores = hs.load()
+        hs_y = 300
+        hs_title = self.font_medium.render("🏆 Bestenliste", True, C.COLOR_UPGRADE)
+        surface.blit(hs_title, (cx - hs_title.get_width() // 2, hs_y))
         if scores:
-            hs_title = self.font_medium.render("🏆 Bestenliste", True, C.COLOR_UPGRADE)
-            surface.blit(hs_title, (cx - hs_title.get_width() // 2, 360))
             for i, entry in enumerate(scores):
                 line = f"{i+1}. {entry['name']:<12} {entry['points']:>6} Pkt"
                 s = self.font_small.render(line, True, C.COLOR_WHITE)
-                surface.blit(s, (cx - s.get_width() // 2, 395 + i * 22))
+                surface.blit(s, (cx - s.get_width() // 2, hs_y + 35 + i * 22))
+        else:
+            none_s = self.font_small.render("Noch keine Einträge", True, (140, 140, 140))
+            surface.blit(none_s, (cx - none_s.get_width() // 2, hs_y + 35))
 
-        surface.blit(hint, (cx - hint.get_width() // 2, C.SCREEN_HEIGHT - 50))
+        surface.blit(hint, (cx - hint.get_width() // 2, C.SCREEN_HEIGHT - 40))
+
+    def _draw_tec_character(self, surface: pygame.Surface, cx: int, cy: int, scale: int = 1):
+        """Zeichnet den TEC-Charakter als Mini-Figur."""
+        w = C.PLAYER_WIDTH  * scale
+        h = C.PLAYER_HEIGHT * scale
+        x = cx - w // 2
+        y = cy - h // 2
+
+        # Körper
+        body = pygame.Rect(x, y, w, h)
+        pygame.draw.rect(surface, C.COLOR_PLAYER, body, border_radius=4 * scale)
+
+        # Augen
+        eye_y = y + 6 * scale
+        pygame.draw.circle(surface, C.COLOR_BLACK, (x + 6 * scale, eye_y), 3 * scale)
+        pygame.draw.circle(surface, C.COLOR_BLACK, (x + w - 6 * scale, eye_y), 3 * scale)
+
+        # Name über dem Charakter
+        name_surf = self.font_medium.render(C.PLAYER_NAME, True, C.COLOR_WHITE)
+        surface.blit(name_surf, (cx - name_surf.get_width() // 2, y - name_surf.get_height() - 4))
+
+        # Pickaxe-Symbol rechts vom Charakter
+        tool_surf = self.font_medium.render("⛏", True, (200, 200, 200))
+        surface.blit(tool_surf, (x + w + 6, cy - tool_surf.get_height() // 2))
 
     def draw_name_input(self, surface: pygame.Surface, name: str, points: int):
         """Eingabe-Screen für Highscore-Name."""

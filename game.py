@@ -188,6 +188,10 @@ class Game:
         eye_y = screen_rect.top + 6
         pygame.draw.circle(self.screen, C.COLOR_BLACK, (screen_rect.left + 6, eye_y), 3)
         pygame.draw.circle(self.screen, C.COLOR_BLACK, (screen_rect.right - 6, eye_y), 3)
+        # Name above player
+        name_surf = self.ui.font_small.render(C.PLAYER_NAME, True, C.COLOR_WHITE)
+        nx = screen_rect.centerx - name_surf.get_width() // 2
+        self.screen.blit(name_surf, (nx, screen_rect.top - name_surf.get_height() - 1))
 
     def _draw_hud(self):
         self.ui.draw_hud(self.screen, self.player)
