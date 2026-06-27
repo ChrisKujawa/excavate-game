@@ -103,6 +103,17 @@ class World:
         self.max_tx = max(self.max_tx, to_tx)
         self.max_ty = max(self.max_ty, to_ty)
 
+    def _cave_weights(self, cy: int) -> list[float]:
+        """Lava-Wahrscheinlichkeit steigt linear mit der Tiefe.
+        Tiefe 0  → [70, 25, 5]  (kaum Lava)
+        Tiefe 200+ → [15, 5, 80] (fast nur Lava)
+        """
+        t = min(1.0, cy / 200.0)
+        empty = 70 - 55 * t
+        water = 25 - 20 * t
+        lava  =  5 + 75 * t
+        return [empty, water, lava]
+
     def _generate_caves_for(self, from_tx: int, to_tx: int, from_ty: int, to_ty: int):
         """Carve caves into the given tile region."""
         region_w = to_tx - from_tx
@@ -110,7 +121,6 @@ class World:
         if region_w <= 0 or region_h <= 0:
             return
         total_tiles = region_w * region_h
-        # Scale cave count proportionally to region size
         num_caves = max(1, round(total_tiles * C.CAVE_COUNT /
                                  (C.WORLD_INITIAL_WIDTH * C.WORLD_INITIAL_DEPTH)))
         rng = random.Random((self.seed ^ (from_tx * 777 + to_tx * 333 +
@@ -120,7 +130,8 @@ class World:
             cy = rng.randint(max(from_ty, self.surface_y() + 3), to_ty - 3)
             w  = rng.randint(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE)
             h  = rng.randint(C.CAVE_MIN_SIZE, max(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE // 2))
-            cave_type = rng.choices(["empty", "water", "lava"], weights=[60, 25, 15])[0]
+            cave_type = rng.choices(["empty", "water", "lava"],
+                                    weights=self._cave_weights(cy))[0]
             for dy in range(h):
                 for dx in range(w):
                     nx, ny = cx + dx, cy + dy

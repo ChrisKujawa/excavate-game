@@ -47,33 +47,51 @@ class UI:
 
     def draw_game_over(self, surface: pygame.Surface, points: int):
         overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 180))
+        overlay.fill((0, 0, 0, 190))
         surface.blit(overlay, (0, 0))
+
+        cx = C.SCREEN_WIDTH // 2
 
         title = self.font_large.render("GAME OVER", True, (220, 50, 50))
         sub   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_WHITE)
-        hint  = self.font_small.render("Drücke R für Neustart", True, C.COLOR_HUD_TEXT)
+        surface.blit(title, (cx - title.get_width() // 2, 60))
+        surface.blit(sub,   (cx - sub.get_width()   // 2, 115))
 
-        cx = C.SCREEN_WIDTH // 2
-        cy = C.SCREEN_HEIGHT // 2
-        surface.blit(title, (cx - title.get_width() // 2, cy - 70))
-        surface.blit(sub,   (cx - sub.get_width()   // 2, cy - 10))
-        surface.blit(hint,  (cx - hint.get_width()  // 2, cy + 40))
+        self._draw_highscore_table(surface, cx, 165)
+
+        hint = self.font_small.render("Drücke R für Neustart", True, C.COLOR_HUD_TEXT)
+        surface.blit(hint, (cx - hint.get_width() // 2, C.SCREEN_HEIGHT - 40))
 
     def draw_win(self, surface: pygame.Surface, points: int):
         overlay = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 180))
+        overlay.fill((0, 0, 0, 190))
         surface.blit(overlay, (0, 0))
 
-        title = self.font_large.render("💎 GEWONNEN! 💎", True, (0, 230, 255))
-        sub   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_WHITE)
-        hint  = self.font_small.render("Drücke R für Neustart", True, C.COLOR_HUD_TEXT)
-
         cx = C.SCREEN_WIDTH // 2
-        cy = C.SCREEN_HEIGHT // 2
-        surface.blit(title, (cx - title.get_width() // 2, cy - 70))
-        surface.blit(sub,   (cx - sub.get_width()   // 2, cy - 10))
-        surface.blit(hint,  (cx - hint.get_width()  // 2, cy + 40))
+
+        title = self.font_large.render("💎 DIAMANT GEFUNDEN! 💎", True, (0, 230, 255))
+        sub   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_WHITE)
+        surface.blit(title, (cx - title.get_width() // 2, 60))
+        surface.blit(sub,   (cx - sub.get_width()   // 2, 115))
+
+        self._draw_highscore_table(surface, cx, 165)
+
+        hint = self.font_small.render("Drücke R für Neustart", True, C.COLOR_HUD_TEXT)
+        surface.blit(hint, (cx - hint.get_width() // 2, C.SCREEN_HEIGHT - 40))
+
+    def _draw_highscore_table(self, surface: pygame.Surface, cx: int, y: int):
+        """Gemeinsame Highscore-Tabelle für Game-Over und Win."""
+        hs_title = self.font_medium.render("🏆 Bestenliste", True, C.COLOR_UPGRADE)
+        surface.blit(hs_title, (cx - hs_title.get_width() // 2, y))
+        scores = hs.load()
+        if scores:
+            for i, entry in enumerate(scores):
+                line = f"{i+1}. {entry['name']:<12} {entry['points']:>6} Pkt"
+                s = self.font_small.render(line, True, C.COLOR_WHITE)
+                surface.blit(s, (cx - s.get_width() // 2, y + 38 + i * 24))
+        else:
+            none_s = self.font_small.render("Noch keine Einträge", True, (140, 140, 140))
+            surface.blit(none_s, (cx - none_s.get_width() // 2, y + 38))
 
     def draw_zone_name(self, surface: pygame.Surface, zone_name: str):
         """Zeigt den aktuellen Zonen-Namen unten rechts."""

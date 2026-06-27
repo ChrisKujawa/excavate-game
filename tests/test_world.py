@@ -125,6 +125,32 @@ class TestWorldRemove:
         assert world.get(0, world.surface_y()).kind == TileKind.AIR
 
 
+class TestCaveDepthScaling:
+    def test_shallow_mostly_empty(self):
+        w = World(seed=1)
+        weights = w._cave_weights(0)
+        # empty >> lava near surface
+        assert weights[0] > weights[2]   # empty > lava
+
+    def test_deep_mostly_lava(self):
+        w = World(seed=1)
+        weights = w._cave_weights(300)
+        # lava >> empty deep down
+        assert weights[2] > weights[0]   # lava > empty
+
+    def test_weights_increase_with_depth(self):
+        w = World(seed=1)
+        shallow_lava = w._cave_weights(10)[2]
+        deep_lava    = w._cave_weights(200)[2]
+        assert deep_lava > shallow_lava
+
+    def test_weights_always_positive(self):
+        w = World(seed=1)
+        for depth in [0, 50, 100, 200, 500]:
+            weights = w._cave_weights(depth)
+            assert all(v > 0 for v in weights)
+
+
 class TestWorldResources:
     def test_resources_exist_in_world(self, world):
         found = any(

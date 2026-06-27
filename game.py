@@ -25,6 +25,7 @@ class Game:
         self.ui.load_fonts()
         self.state  = GameState.START
         self.input_name: str = ""
+        self._post_name_state: str = GameState.START
         self._new_game()
 
     def _new_game(self):
@@ -81,8 +82,8 @@ class Game:
             if key == pygame.K_RETURN:
                 name = self.input_name.strip() or "Anonym"
                 hs.save(name, self.player.points)
-                self.state = GameState.START
-                self._new_game()
+                pygame.key.stop_text_input()
+                self.state = self._post_name_state
             elif key == pygame.K_BACKSPACE:
                 self.input_name = self.input_name[:-1]
             return True
@@ -128,10 +129,16 @@ class Game:
             self.world.tick_fluids()
 
         if not self.player.alive and self.state == GameState.PLAYING:
-            self.state = GameState.GAME_OVER
+            if hs.is_highscore(self.player.points):
+                self._post_name_state = GameState.GAME_OVER
+                self.state = GameState.NAME_INPUT
+                pygame.key.start_text_input()
+            else:
+                self.state = GameState.GAME_OVER
 
         if self.player.won and self.state == GameState.PLAYING:
             if hs.is_highscore(self.player.points):
+                self._post_name_state = GameState.WIN
                 self.state = GameState.NAME_INPUT
                 pygame.key.start_text_input()
             else:
