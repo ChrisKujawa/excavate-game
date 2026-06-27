@@ -1,0 +1,110 @@
+"""Tests für camera.py und highscore.py."""
+import pytest
+import pygame
+import tempfile
+import os
+from camera import Camera
+import constants as C
+
+
+class TestCamera:
+    def test_initial_offset_zero(self):
+        cam = Camera()
+        assert cam.offset_y == 0.0
+
+    def test_visible_range_at_top(self):
+        cam = Camera()
+        first, last = cam.visible_tile_range()
+        assert first == 0
+        assert last > 0
+        assert last <= C.WORLD_HEIGHT
+
+    def test_apply_shifts_rect(self):
+        cam = Camera()
+        cam.offset_y = 100.0
+        rect = pygame.Rect(0, 200, 32, 32)
+        result = cam.apply(rect)
+        assert result.y == 200 - 100
+
+    def test_camera_follows_player_downward(self):
+        cam = Camera()
+        player_rect = pygame.Rect(0, C.SCREEN_HEIGHT * 2, 24, 28)
+        cam.update(player_rect)
+        assert cam.offset_y > 0
+
+    def test_camera_never_goes_above_zero(self):
+        cam = Camera()
+        player_rect = pygame.Rect(0, 0, 24, 28)
+        for _ in range(10):
+            cam.update(player_rect)
+        assert cam.offset_y >= 0
+
+    def test_camera_never_exceeds_world(self):
+        cam = Camera()
+        player_rect = pygame.Rect(0, C.WORLD_HEIGHT * C.TILE_SIZE, 24, 28)
+        for _ in range(20):
+            cam.update(player_rect)
+        max_offset = C.WORLD_HEIGHT * C.TILE_SIZE - C.SCREEN_HEIGHT
+        assert cam.offset_y <= max_offset
+
+    def test_world_to_screen_y(self):
+        cam = Camera()
+        cam.offset_y = 64.0
+        assert cam.world_to_screen_y(128) == 64
+
+
+# ------------------------------------------------------------------ #
+#  Highscore Tests                                                     #
+# ------------------------------------------------------------------ #
+
+@pytest.fixture
+def hs_module(tmp_path, monkeypatch):
+    """Importiert highscore-Modul mit temporärer Datei."""
+    import highscore
+    monkeypatch.setattr(highscore, "HIGHSCORE_FILE", str(tmp_path / "scores.json"))
+    return highscore
+
+
+class TestHighscore:
+    def test_load_empty(self, hs_module):
+        assert hs_module.load() == []
+
+    def test_save_and_load(self, hs_module):
+        hs_module.save("Alice", 500)
+        scores = hs_module.load()
+        assert len(scores) == 1
+        assert scores[0]["name"] == "Alice"
+        assert scores[0]["points"] == 500
+
+    def test_sorted_descending(self, hs_module):
+        hs_module.save("Alice", 100)
+        hs_module.save("Bob", 500)
+        hs_module.save("Carol", 300)
+        scores = hs_module.load()
+        points = [s["points"] for s in scores]
+        assert points == sorted(points, reverse=True)
+
+    def test_max_entries(self, hs_module):
+        for i in range(10):
+            hs_module.save(f"Player{i}", i * 100)
+        assert len(hs_module.load()) <= hs_module.MAX_ENTRIES
+
+    def test_is_highscore_empty_list(self, hs_module):
+        assert hs_module.is_highscore(1) is True
+
+    def test_is_highscore_beats_last(self, hs_module):
+        for i in range(hs_module.MAX_ENTRIES):
+            hs_module.save(f"P{i}", (i + 1) * 100)
+        # Niedrigster Score ist 100, 50 wäre kein Highscore
+        assert hs_module.is_highscore(50) is False
+        assert hs_module.is_highscore(9999) is True
+
+    def test_name_truncated_to_12(self, hs_module):
+        hs_module.save("A" * 20, 100)
+        scores = hs_module.load()
+        assert len(scores[0]["name"]) <= 12
+
+    def test_corrupt_file_returns_empty(self, hs_module):
+        with open(hs_module.HIGHSCORE_FILE, "w") as f:
+            f.write("not valid json {{")
+        assert hs_module.load() == []

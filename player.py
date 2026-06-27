@@ -11,7 +11,7 @@ class Player:
         spawn_ty = world.surface_y()
         self.rect = pygame.Rect(
             spawn_tx * C.TILE_SIZE + (C.TILE_SIZE - C.PLAYER_WIDTH) // 2,
-            spawn_ty * C.TILE_SIZE,
+            spawn_ty * C.TILE_SIZE - C.PLAYER_HEIGHT,  # just above first solid row
             C.PLAYER_WIDTH,
             C.PLAYER_HEIGHT,
         )
@@ -111,9 +111,11 @@ class Player:
             return
 
         self.rect.x += dx
-        # Kollision mit Wänden
+        # Kollision mit Wänden → versuche Tile abzubauen
         if self._collides_with_solid(self.rect):
             self.rect.x -= dx
+            direction = "left" if dx < 0 else "right"
+            self.try_dig(direction)
 
         # Weltgrenzen
         self.rect.x = max(0, min(self.rect.x, (C.WORLD_WIDTH * C.TILE_SIZE) - self.rect.width))
