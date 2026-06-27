@@ -130,14 +130,14 @@ class UI:
 
         # --- Steuerung ---
         controls = [
-            "← →        Bewegen / Graben",
-            "↑ / SPACE  Springen",
-            "↓           Nach unten graben",
+            "< >        Bewegen / Graben",
+            "^  / SPACE  Springen",
+            "v           Nach unten graben",
             "R           Neustart",
             "F11         Vollbild an/aus",
         ]
         ctrl_y = 155
-        ctrl_title = self.font_small.render("── Steuerung ──", True, (180, 180, 255))
+        ctrl_title = self.font_small.render("-- Steuerung --", True, (180, 180, 255))
         surface.blit(ctrl_title, (cx - ctrl_title.get_width() // 2, ctrl_y))
         for i, line in enumerate(controls):
             s = self.font_small.render(line, True, (200, 200, 255))
@@ -146,7 +146,7 @@ class UI:
         # --- Highscores ---
         scores = hs.load()
         hs_y = 310
-        hs_title = self.font_medium.render("🏆 Bestenliste", True, C.COLOR_UPGRADE)
+        hs_title = self.font_medium.render("-- Bestenliste --", True, C.COLOR_UPGRADE)
         surface.blit(hs_title, (cx - hs_title.get_width() // 2, hs_y))
         if scores:
             for i, entry in enumerate(scores):
@@ -154,7 +154,7 @@ class UI:
                 s = self.font_small.render(line, True, C.COLOR_WHITE)
                 surface.blit(s, (cx - s.get_width() // 2, hs_y + 35 + i * 22))
         else:
-            none_s = self.font_small.render("Noch keine Einträge", True, (140, 140, 140))
+            none_s = self.font_small.render("Noch keine Eintrage", True, (140, 140, 140))
             surface.blit(none_s, (cx - none_s.get_width() // 2, hs_y + 35))
 
         surface.blit(hint, (cx - hint.get_width() // 2, sh - 40))
@@ -179,9 +179,10 @@ class UI:
         name_surf = self.font_medium.render(C.PLAYER_NAME, True, C.COLOR_WHITE)
         surface.blit(name_surf, (cx - name_surf.get_width() // 2, y - name_surf.get_height() - 4))
 
-        # Pickaxe-Symbol rechts vom Charakter
-        tool_surf = self.font_medium.render("⛏", True, (200, 200, 200))
-        surface.blit(tool_surf, (x + w + 6, cy - tool_surf.get_height() // 2))
+        # Pickaxe drawn as two lines (handle + head)
+        px, py = x + w + 8, cy
+        pygame.draw.line(surface, (200, 200, 200), (px, py + 8), (px + 12, py - 6), 2)
+        pygame.draw.line(surface, (200, 200, 200), (px + 7, py - 8), (px + 16, py - 1), 3)
 
     def draw_name_input(self, surface: pygame.Surface, name: str, points: int):
         """Eingabe-Screen für Highscore-Name."""
