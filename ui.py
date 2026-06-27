@@ -23,7 +23,7 @@ class UI:
             f"Tiefe:    {player.depth()} m",
             f"Punkte:   {player.points}",
             f"Spitzhacke: Lv {player.pickaxe_level}",
-            f"Leben:    {'❤️ ' * player.hp}",
+            "Leben:",
         ]
 
         # Hintergrund-Box
@@ -36,6 +36,16 @@ class UI:
         for i, text in enumerate(lines):
             surf = self.font_small.render(text, True, C.COLOR_HUD_TEXT)
             surface.blit(surf, (pad * 2, pad + i * line_h))
+
+        # HP pips (small colored squares next to "Leben:")
+        pip_x = pad * 2 + 56
+        pip_y = pad + 3 * line_h + 5
+        pip_size, pip_gap = 13, 4
+        for i in range(C.PLAYER_MAX_HP):
+            color = (220, 40, 40) if i < player.hp else (60, 60, 60)
+            pygame.draw.rect(surface, color,
+                             pygame.Rect(pip_x + i * (pip_size + pip_gap), pip_y, pip_size, pip_size),
+                             border_radius=2)
 
         # Feedback-Text (Mitte oben)
         if player.feedback_text:
@@ -71,7 +81,7 @@ class UI:
 
         cx = sw // 2
 
-        title = self.font_large.render("💎 DIAMANT GEFUNDEN! 💎", True, (0, 230, 255))
+        title = self.font_large.render("<> DIAMANT GEFUNDEN! <>", True, (0, 230, 255))
         sub   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_WHITE)
         surface.blit(title, (cx - title.get_width() // 2, 60))
         surface.blit(sub,   (cx - sub.get_width()   // 2, 115))
@@ -83,7 +93,7 @@ class UI:
 
     def _draw_highscore_table(self, surface: pygame.Surface, cx: int, y: int):
         """Gemeinsame Highscore-Tabelle für Game-Over und Win."""
-        hs_title = self.font_medium.render("🏆 Bestenliste", True, C.COLOR_UPGRADE)
+        hs_title = self.font_medium.render("-- Bestenliste --", True, C.COLOR_UPGRADE)
         surface.blit(hs_title, (cx - hs_title.get_width() // 2, y))
         scores = hs.load()
         if scores:
@@ -92,7 +102,7 @@ class UI:
                 s = self.font_small.render(line, True, C.COLOR_WHITE)
                 surface.blit(s, (cx - s.get_width() // 2, y + 38 + i * 24))
         else:
-            none_s = self.font_small.render("Noch keine Einträge", True, (140, 140, 140))
+            none_s = self.font_small.render("Noch keine Eintrage", True, (140, 140, 140))
             surface.blit(none_s, (cx - none_s.get_width() // 2, y + 38))
 
     def draw_zone_name(self, surface: pygame.Surface, zone_name: str):

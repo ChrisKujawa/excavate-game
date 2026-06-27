@@ -1,18 +1,37 @@
 # 🪨 Excavate Game
 
-Ein 2D Side-View Graber-Spiel in Python + Pygame. Steuere **TEC** durch verschiedene Gesteinsschichten, sammle Ressourcen und finde den riesigen Diamanten am Boden der Welt!
+Ein 2D Side-View Graber-Spiel – entwickelt von **TEC** (T, E & C) mit Python + Pygame.
+Grab dich durch unendliche Schichten, sammle Ressourcen und finde den riesigen Diamanten!
 
-> **TEC** steht für die Anfangsbuchstaben unserer Entwickler-Familie: **T**, **E** und **C** 💛
+## 🌐 Direkt im Browser spielen
 
-## Spielziel
+**👉 [chriskujawa.github.io/excavate-game](https://chriskujawa.github.io/excavate-game/)**
 
-Starte an der Oberfläche und grabe dich immer tiefer. Sammle Punkte, upgrade deine Spitzhacke und finde den **Riesigen Diamanten** tief im Obsidian-Gestein. Die Welt ist unendlich breit – erforsche sie nach links und rechts!
+Keine Installation nötig – läuft direkt im Browser dank [Pygbag](https://pygame-web.github.io/) (WebAssembly).
 
-## Steuerung
+---
+
+## 💻 Lokal spielen
+
+```bash
+pip install pygame-ce
+python main.py
+```
+
+## 🧪 Tests ausführen
+
+```bash
+pip install pytest
+python -m pytest tests/ -v
+```
+
+---
+
+## 🎮 Steuerung
 
 | Taste | Aktion |
 |-------|--------|
-| `← →` | Bewegen (gegen Wand = graben) |
+| `← →` | Bewegen (gegen Wand = automatisch graben) |
 | `↑` / `SPACE` | Springen |
 | `↓` / `S` | Nach unten graben |
 | `Q` | Links graben |
@@ -20,7 +39,14 @@ Starte an der Oberfläche und grabe dich immer tiefer. Sammle Punkte, upgrade de
 | `R` | Neustart |
 | `ESC` | Beenden |
 
-## Tiefen-Zonen
+---
+
+## 🌍 Die Welt
+
+Die Welt ist **unendlich** – in alle Richtungen. Neue Bereiche werden on-the-fly generiert.
+Gleicher Seed = immer gleiche Welt.
+
+### Tiefen-Zonen
 
 | Zone | Tiefe | Material | Pickaxe |
 |------|-------|----------|---------|
@@ -32,13 +58,21 @@ Starte an der Oberfläche und grabe dich immer tiefer. Sammle Punkte, upgrade de
 | 🔵 | 120–150 | Basalt | Lv 6 |
 | ⬜ | 150–170 | Quarz | Lv 7 |
 | 💎 | 170–190 | Tiefer Kristall | Lv 8 |
-| 🌑 | 190–200 | Urkern | Lv 9 |
+| 🌑 | 190+ | Urkern (∞) | Lv 9 |
 
-## Ressourcen & Punkte
+### Gefahren
 
-| Ressource | Punkte | Wo |
-|-----------|--------|----|
-| 🖤 Kohle | 5 | Erde / Bruchstein |
+- 💧 **Wasser-Höhlen** – HP sinkt langsam. Wasser fließt nach unten!
+- 🔥 **Lava-Höhlen** – sofortiger Tod. Lava fließt nach unten!
+- Je tiefer, desto mehr Lava (5% an der Oberfläche → 80% in großer Tiefe)
+
+---
+
+## 💎 Ressourcen & Punkte
+
+| Ressource | Punkte | Wo zu finden |
+|-----------|--------|--------------|
+| 🖤 Kohle | 5 | Oberfläche |
 | 🟤 Eisen | 15 | Bruchstein / Fester Stein |
 | 💚 Smaragd | 40 | Fester Stein / Granit |
 | ❤️ Rubin | 80 | Granit / Obsidian |
@@ -48,55 +82,54 @@ Starte an der Oberfläche und grabe dich immer tiefer. Sammle Punkte, upgrade de
 | 🩷 Opal | 400 | Quarz / Tiefer Kristall |
 | 💜 Amethyst | 600 | Tiefer Kristall / Urkern |
 | 🦴 **Fossil** | **1000** | **Quarz bis Urkern (sehr selten!)** |
-| 💎 Riesdiamant | WIN | 1× am Boden |
+| 💎 Riesdiamant | **WIN** | Tiefe 195, x=0 |
 
-## Pickaxe-Upgrades
+## ⛏ Pickaxe-Upgrades
 
-| Punkte | Level |
-|--------|-------|
-| 50 | Lv 2 |
-| 150 | Lv 3 |
-| 350 | Lv 4 |
-| 700 | Lv 5 |
-| 1200 | Lv 6 |
-| 2000 | Lv 7 |
-| 3000 | Lv 8 |
-| 5000 | Lv 9 |
+| Punkte | Level | Kann abbauen |
+|--------|-------|--------------|
+| 50 | Lv 2 | Bruchstein |
+| 150 | Lv 3 | Fester Stein |
+| 350 | Lv 4 | Granit |
+| 700 | Lv 5 | Obsidian |
+| 1200 | Lv 6 | Basalt |
+| 2000 | Lv 7 | Quarz |
+| 3000 | Lv 8 | Tiefer Kristall |
+| 5000 | Lv 9 | Urkern |
 
-## Gefahren
+---
 
-- 💧 **Wasser-Höhlen** – langsamer HP-Verlust. Wasser fließt nach unten!
-- 🔥 **Lava-Höhlen** – sofortiger Tod. Lava fließt nach unten!
-- Leere Höhlen: harmlos, aber man fällt rein!
+## 🏆 Highscore
 
-## Installation & Starten
+- Top-5 Bestenliste wird lokal gespeichert
+- Erscheint bei Tod **und** beim Diamant-Finden
+- Beim Tod mit neuem Highscore → Namenseingabe
 
-```bash
-pip install pygame-ce
-python main.py
-```
+---
 
-## Tests ausführen
-
-```bash
-python -m pytest tests/ -v
-```
-
-## Projektstruktur
+## 🏗️ Projektstruktur
 
 ```
 excavate-game/
-├── main.py         # Einstiegspunkt
+├── main.py         # Einstiegspunkt (pygbag-kompatibel, async)
 ├── game.py         # Spielschleife + Zustände
-├── world.py        # Prozedurale & expandierbare Welt-Generierung
+├── world.py        # Prozedurale & unendlich expandierbare Welt
 ├── player.py       # TEC – Spieler-Logik
 ├── tile.py         # Tile-Typen
-├── camera.py       # Kamera (vertikal + horizontal)
-├── ui.py           # HUD, Start-Screen, Game-Over/Win-Screens
+├── camera.py       # Kamera (vertikal + horizontal, unendlich)
+├── ui.py           # HUD, Start/Game-Over/Win-Screens
 ├── highscore.py    # Lokale Bestenliste (Top 5)
 ├── constants.py    # Alle Konstanten
-└── tests/          # 93 Pytest Tests
+├── tests/          # Pytest-Tests
+└── .github/
+    └── workflows/
+        └── deploy-pages.yml  # Auto-Deploy auf GitHub Pages
 ```
+
+---
+
+> Made with ❤️ by **T**, **E** & **C**
+
 
 
 Game build with my kids
