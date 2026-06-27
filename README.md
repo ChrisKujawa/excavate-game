@@ -1,5 +1,7 @@
 # 🪨 Excavate Game
 
+> ✨ **Vibe Coded** – dieses Spiel wurde von **T, E & C** gemeinsam mit [GitHub Copilot](https://github.com/features/copilot) vibe-coded. Idee → Brainstorming → Code → fertig. 🎮
+
 Ein 2D Side-View Graber-Spiel – entwickelt von **TEC** (T, E & C) mit Python + Pygame.
 Grab dich durch unendliche Schichten, sammle Ressourcen und finde den riesigen Diamanten!
 
