@@ -10,13 +10,16 @@ class Camera:
         self.offset_y: float = 0.0
 
     def update(self, player_rect: pygame.Rect, world=None):
+        screen = pygame.display.get_surface()
+        sw, sh = screen.get_width(), screen.get_height()
+
         # --- Vertikal (unendlich – kein Boden-Clamp) ---
-        target_y = player_rect.centery - C.SCREEN_HEIGHT // 2
+        target_y = player_rect.centery - sh // 2
         self.offset_y += (target_y - self.offset_y) * (1 - C.CAMERA_LAG)
         self.offset_y = max(0, self.offset_y)
 
         # --- Horizontal ---
-        target_x = player_rect.centerx - C.SCREEN_WIDTH // 2
+        target_x = player_rect.centerx - sw // 2
         self.offset_x += (target_x - self.offset_x) * (1 - C.CAMERA_LAG)
         if world is not None:
             min_x = world.min_tx * C.TILE_SIZE
@@ -33,12 +36,14 @@ class Camera:
 
     def visible_tile_range(self) -> tuple[int, int]:
         """Sichtbare Tile-Reihen (vertikal)."""
+        sh = pygame.display.get_surface().get_height()
         first = max(0, int(self.offset_y) // C.TILE_SIZE - 1)
-        last  = first + C.SCREEN_HEIGHT // C.TILE_SIZE + 3
+        last  = first + sh // C.TILE_SIZE + 3
         return first, last
 
     def visible_col_range(self) -> tuple[int, int]:
         """Sichtbare Tile-Spalten (horizontal)."""
+        sw = pygame.display.get_surface().get_width()
         first = int(self.offset_x) // C.TILE_SIZE - 1
-        last  = first + C.SCREEN_WIDTH // C.TILE_SIZE + 3
+        last  = first + sw // C.TILE_SIZE + 3
         return first, last

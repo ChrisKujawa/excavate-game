@@ -6,7 +6,23 @@ from player import Player
 from camera import Camera
 from ui import UI
 from tile import TileKind, get_zone_index
+from touch_controls import TouchControls
 import highscore as hs
+
+
+class _KeysWithTouch:
+    """Wraps pygame key state and overlays touch button state."""
+    def __init__(self, keys, touch: TouchControls):
+        self._keys = keys
+        self._touch = touch
+
+    def __getitem__(self, k):
+        result = self._keys[k]
+        if k in (pygame.K_LEFT, pygame.K_a):
+            result = result or self._touch.is_held("left")
+        elif k in (pygame.K_RIGHT, pygame.K_d):
+            result = result or self._touch.is_held("right")
+        return result
 
 
 class GameState:
@@ -23,10 +39,20 @@ class Game:
         self.clock  = pygame.time.Clock()
         self.ui     = UI()
         self.ui.load_fonts()
+        self.touch  = TouchControls()
         self.state  = GameState.START
         self.input_name: str = ""
         self._post_name_state: str = GameState.START
         self._new_game()
+
+    def _toggle_fullscreen(self):
+        is_fullscreen = bool(self.screen.get_flags() & pygame.FULLSCREEN)
+        if is_fullscreen:
+            self.screen = pygame.display.set_mode(
+                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+            )
+        else:
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
     def _new_game(self):
         import random
@@ -54,8 +80,18 @@ class Game:
                     if self.state == GameState.NAME_INPUT:
                         if len(self.input_name) < 12:
                             self.input_name += event.text
+                self.touch.handle_event(event)
+                self._handle_touch_nav(event)
 
-            keys = pygame.key.get_pressed()
+            # One-shot touch actions (jump, dig)
+            for action in self.touch.consume_just_pressed():
+                if self.state == GameState.PLAYING:
+                    if action == "jump":
+                        self.player.jump()
+                    elif action == "dig_down":
+                        self.player.try_dig("down")
+
+            keys = _KeysWithTouch(pygame.key.get_pressed(), self.touch)
             self._update(keys)
             self._draw()
             pygame.display.flip()
@@ -65,11 +101,25 @@ class Game:
     #  Input                                                               #
     # ------------------------------------------------------------------ #
 
+    def _handle_touch_nav(self, event):
+        """Tap-to-start / tap-to-restart for touch screens."""
+        if event.type not in (pygame.FINGERDOWN, pygame.MOUSEBUTTONDOWN):
+            return
+        if self.state == GameState.START:
+            self.state = GameState.PLAYING
+        elif self.state in (GameState.GAME_OVER, GameState.WIN):
+            self.state = GameState.PLAYING
+            self._new_game()
+
     def _handle_keydown(self, event) -> bool:
         key = event.key
 
         if key == pygame.K_ESCAPE:
             return False  # quit
+
+        if key == pygame.K_F11:
+            self._toggle_fullscreen()
+            return True
 
         # --- Start Screen ---
         if self.state == GameState.START:
@@ -157,6 +207,7 @@ class Game:
         self._draw_world()
         self._draw_player()
         self._draw_hud()
+        self.touch.draw(self.screen)
 
         if self.state == GameState.GAME_OVER:
             self.ui.draw_game_over(self.screen, self.player.points)
