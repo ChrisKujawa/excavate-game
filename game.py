@@ -102,9 +102,7 @@ class Game:
     # ------------------------------------------------------------------ #
 
     def _handle_touch_nav(self, event):
-        """Tap-to-start / tap-to-restart for touch screens (web only)."""
-        if not C.IS_WEB:
-            return
+        """Click/tap-to-start and tap-to-restart for pointer input."""
         if event.type not in (pygame.FINGERDOWN, pygame.MOUSEBUTTONDOWN):
             return
         if self.state == GameState.START:
