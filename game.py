@@ -7,6 +7,7 @@ from camera import Camera
 from ui import UI
 from tile import TileKind, get_zone_index
 from touch_controls import TouchControls
+from worm import Worm
 import highscore as hs
 
 
@@ -26,11 +27,12 @@ class _KeysWithTouch:
 
 
 class GameState:
-    START      = "start"
-    PLAYING    = "playing"
-    GAME_OVER  = "game_over"
-    WIN        = "win"
-    NAME_INPUT = "name_input"
+    START          = "start"
+    PLAYING        = "playing"
+    GAME_OVER      = "game_over"
+    WIN            = "win"
+    LEVEL_COMPLETE = "level_complete"
+    NAME_INPUT     = "name_input"
 
 
 class Game:
@@ -43,6 +45,7 @@ class Game:
         self.state  = GameState.START
         self.input_name: str = ""
         self._post_name_state: str = GameState.START
+        self.level: int = 1
         self._new_game()
 
     def _toggle_fullscreen(self):
@@ -56,11 +59,39 @@ class Game:
 
     def _new_game(self):
         import random
-        self.world  = World(seed=random.randint(0, 99999))
+        self.level = 1
+        self.world  = World(seed=random.randint(0, 99999), level=self.level)
         self.player = Player(self.world)
         self.camera = Camera()
         self.input_name = ""
         self._fluid_tick = 0
+        self.worm: Worm | None = None
+        self._init_timer()
+
+    def _new_level(self):
+        """Nächstes Level starten – Spieler-Fortschritt bleibt erhalten."""
+        import random
+        self.level += 1
+        old_points   = self.player.points
+        old_pickaxe  = self.player.pickaxe_level
+        self.world   = World(seed=random.randint(0, 99999), level=self.level)
+        self.player  = Player(self.world)
+        self.player.points        = old_points
+        self.player.pickaxe_level = old_pickaxe
+        self.camera  = Camera()
+        self._fluid_tick = 0
+        self._init_timer()
+        # Wurm ab Level 3
+        if self.level >= C.WORM_LEVEL_START:
+            spawn_ty = self.world.surface_y()
+            self.worm = Worm(0, spawn_ty)
+        else:
+            self.worm = None
+
+    def _init_timer(self):
+        """Countdown-Timer für das aktuelle Level setzen."""
+        idx = min(self.level - 1, len(C.LEVEL_TIME_SECONDS) - 1)
+        self.time_left: int = C.LEVEL_TIME_SECONDS[idx] * C.FPS
 
     # ------------------------------------------------------------------ #
     #  Haupt-Loop                                                          #
@@ -125,6 +156,8 @@ class Game:
         elif self.state in (GameState.GAME_OVER, GameState.WIN):
             self.state = GameState.PLAYING
             self._new_game()
+        elif self.state == GameState.LEVEL_COMPLETE:
+            self._start_next_level()
 
     def _handle_keydown(self, event) -> bool:
         key = event.key
@@ -153,6 +186,12 @@ class Game:
                 self.input_name = self.input_name[:-1]
             return True
 
+        # --- Level Complete ---
+        if self.state == GameState.LEVEL_COMPLETE:
+            if key in (pygame.K_r, pygame.K_RETURN, pygame.K_SPACE):
+                self._start_next_level()
+            return True
+
         # --- Neustart ---
         if key == pygame.K_r:
             self.state = GameState.PLAYING
@@ -174,6 +213,20 @@ class Game:
 
         return True
 
+    def _start_next_level(self):
+        """Zum nächsten Level wechseln oder Sieg-Screen zeigen."""
+        if self.level >= C.MAX_LEVELS:
+            # Alle Level abgeschlossen → Endsieger
+            if hs.is_highscore(self.player.points):
+                self._post_name_state = GameState.WIN
+                self.state = GameState.NAME_INPUT
+                pygame.key.start_text_input()
+            else:
+                self.state = GameState.WIN
+        else:
+            self._new_level()
+            self.state = GameState.PLAYING
+
     def _update(self, keys):
         if self.state != GameState.PLAYING:
             return
@@ -193,6 +246,19 @@ class Game:
             self._fluid_tick = 0
             self.world.tick_fluids()
 
+        # Countdown-Timer
+        self.time_left -= 1
+        if self.time_left <= 0 and self.state == GameState.PLAYING:
+            self.player.alive = False
+
+        # Wurm aktualisieren
+        if self.worm is not None and self.player.alive:
+            self.worm.update(self.player.trail)
+            player_tx = self.player.rect.centerx // C.TILE_SIZE
+            player_ty = self.player.rect.centery // C.TILE_SIZE
+            if self.worm.catches_player(player_tx, player_ty):
+                self.player.alive = False
+
         if not self.player.alive and self.state == GameState.PLAYING:
             if hs.is_highscore(self.player.points):
                 self._post_name_state = GameState.GAME_OVER
@@ -202,12 +268,16 @@ class Game:
                 self.state = GameState.GAME_OVER
 
         if self.player.won and self.state == GameState.PLAYING:
-            if hs.is_highscore(self.player.points):
-                self._post_name_state = GameState.WIN
-                self.state = GameState.NAME_INPUT
-                pygame.key.start_text_input()
+            if self.level >= C.MAX_LEVELS:
+                # Letztes Level geschafft → finaler Sieg
+                if hs.is_highscore(self.player.points):
+                    self._post_name_state = GameState.WIN
+                    self.state = GameState.NAME_INPUT
+                    pygame.key.start_text_input()
+                else:
+                    self.state = GameState.WIN
             else:
-                self.state = GameState.WIN
+                self.state = GameState.LEVEL_COMPLETE
 
     # ------------------------------------------------------------------ #
     #  Zeichnen                                                            #
@@ -221,6 +291,8 @@ class Game:
         self.screen.fill(C.COLOR_SKY)
         self._draw_world()
         self._draw_player()
+        if self.worm is not None:
+            self.worm.draw(self.screen, self.camera)
         self._draw_hud()
         if C.IS_WEB:
             self.touch.draw(self.screen)
@@ -229,6 +301,8 @@ class Game:
             self.ui.draw_game_over(self.screen, self.player.points)
         elif self.state == GameState.WIN:
             self.ui.draw_win(self.screen, self.player.points)
+        elif self.state == GameState.LEVEL_COMPLETE:
+            self.ui.draw_level_complete(self.screen, self.level, self.player.points)
         elif self.state == GameState.NAME_INPUT:
             self.ui.draw_name_input(self.screen, self.input_name, self.player.points)
 
@@ -270,7 +344,7 @@ class Game:
         self.screen.blit(name_surf, (nx, screen_rect.top - name_surf.get_height() - 1))
 
     def _draw_hud(self):
-        self.ui.draw_hud(self.screen, self.player)
+        self.ui.draw_hud(self.screen, self.player, self.level, self.time_left, self.worm)
         depth = self.player.depth()
         zone_idx = get_zone_index(depth + 2)
         zone_name = C.ZONES[zone_idx]["name"]

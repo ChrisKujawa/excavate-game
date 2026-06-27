@@ -14,12 +14,19 @@ class UI:
         self.font_medium = pygame.font.SysFont("monospace", 22, bold=True)
         self.font_small  = pygame.font.SysFont("monospace", 16)
 
-    def draw_hud(self, surface: pygame.Surface, player):
+    def draw_hud(self, surface: pygame.Surface, player, level: int = 1,
+                 time_left: int = 0, worm=None):
         """Zeichnet das HUD oben links."""
+        import constants as C
         pad = 8
         line_h = 24
 
+        # Zeit in Sekunden
+        seconds = max(0, time_left // C.FPS)
+        time_color = (220, 40, 40) if seconds <= 20 else C.COLOR_HUD_TEXT
+
         lines = [
+            f"Level:    {level} / {C.MAX_LEVELS}",
             f"Tiefe:    {player.depth()} m",
             f"Punkte:   {player.points}",
             f"Spitzhacke: Lv {player.pickaxe_level}",
@@ -39,13 +46,29 @@ class UI:
 
         # HP pips (small colored squares next to "Leben:")
         pip_x = pad * 2 + 56
-        pip_y = pad + 3 * line_h + 5
+        pip_y = pad + 4 * line_h + 5
         pip_size, pip_gap = 13, 4
         for i in range(C.PLAYER_MAX_HP):
             color = (220, 40, 40) if i < player.hp else (60, 60, 60)
             pygame.draw.rect(surface, color,
                              pygame.Rect(pip_x + i * (pip_size + pip_gap), pip_y, pip_size, pip_size),
                              border_radius=2)
+
+        # Timer oben rechts
+        timer_surf = self.font_medium.render(f"Zeit: {seconds}s", True, time_color)
+        tx = surface.get_width() - timer_surf.get_width() - 10
+        surface.blit(timer_surf, (tx, pad))
+
+        # Worm-Warnung
+        if worm is not None and worm.is_active:
+            warn_surf = self.font_medium.render("⚠ WURM NAHT!", True, (220, 40, 40))
+            wx = surface.get_width() - warn_surf.get_width() - 10
+            surface.blit(warn_surf, (wx, pad + 30))
+        elif worm is not None and not worm.is_active:
+            delay_s = int(worm.delay_seconds)
+            info_surf = self.font_small.render(f"Wurm in {delay_s}s", True, (255, 160, 50))
+            wx = surface.get_width() - info_surf.get_width() - 10
+            surface.blit(info_surf, (wx, pad + 30))
 
         # Feedback-Text (Mitte oben)
         if player.feedback_text:
@@ -81,7 +104,7 @@ class UI:
 
         cx = sw // 2
 
-        title = self.font_large.render("<> DIAMANT GEFUNDEN! <>", True, (0, 230, 255))
+        title = self.font_large.render("<> ALLE LEVEL GESCHAFFT! <>", True, (0, 230, 255))
         sub   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_WHITE)
         surface.blit(title, (cx - title.get_width() // 2, 60))
         surface.blit(sub,   (cx - sub.get_width()   // 2, 115))
@@ -90,6 +113,27 @@ class UI:
 
         hint = self.font_small.render("Drücke R für Neustart", True, C.COLOR_HUD_TEXT)
         surface.blit(hint, (cx - hint.get_width() // 2, sh - 40))
+
+    def draw_level_complete(self, surface: pygame.Surface, level: int, points: int):
+        import constants as C
+        sw, sh = surface.get_width(), surface.get_height()
+        overlay = pygame.Surface((sw, sh), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 200))
+        surface.blit(overlay, (0, 0))
+
+        cx = sw // 2
+
+        title = self.font_large.render(f"LEVEL {level} GESCHAFFT!", True, (80, 255, 120))
+        next_l = level + 1
+        sub   = self.font_medium.render(
+            f"Weiter zu Level {next_l} von {C.MAX_LEVELS}...", True, C.COLOR_WHITE)
+        pts   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_UPGRADE)
+        hint  = self.font_small.render("R / ENTER / Tippen zum Weitermachen", True, (180, 180, 180))
+
+        surface.blit(title, (cx - title.get_width() // 2, sh // 2 - 90))
+        surface.blit(sub,   (cx - sub.get_width()   // 2, sh // 2 - 30))
+        surface.blit(pts,   (cx - pts.get_width()   // 2, sh // 2 + 20))
+        surface.blit(hint,  (cx - hint.get_width()  // 2, sh - 40))
 
     def _draw_highscore_table(self, surface: pygame.Surface, cx: int, y: int):
         """Gemeinsame Highscore-Tabelle für Game-Over und Win."""

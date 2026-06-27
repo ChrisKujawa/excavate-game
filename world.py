@@ -2,25 +2,36 @@ import random
 import constants as C
 from tile import (
     Tile, TileKind,
-    make_air, make_ground, make_resource, make_water, make_lava,
+    make_air, make_ground, make_resource, make_lava,
     make_diamond, get_zone_index,
 )
 
-# Depth of the big diamond (win goal)
-DIAMOND_DEPTH = 195
+
+def diamond_depth_for_level(level: int) -> int:
+    """Gibt die Diamant-Tiefe (in Tiles) für das angegebene Level zurück."""
+    idx = min(level - 1, len(C.LEVEL_DIAMOND_DEPTHS) - 1)
+    return C.LEVEL_DIAMOND_DEPTHS[idx]
+
+
+def world_depth_for_level(level: int) -> int:
+    """Gibt die initiale Welt-Starttiefe für das angegebene Level zurück."""
+    idx = min(level - 1, len(C.LEVEL_WORLD_DEPTHS) - 1)
+    return C.LEVEL_WORLD_DEPTHS[idx]
 
 
 class World:
-    def __init__(self, seed: int = None):
+    def __init__(self, seed: int = None, level: int = 1):
         self.seed = seed if seed is not None else random.randint(0, 999999)
+        self.level = level
         self._tiles: dict[tuple[int, int], Tile] = {}
         self.min_tx: int = 0
         self.max_tx: int = 0   # exclusive: columns [min_tx, max_tx)
         self.max_ty: int = 0   # exclusive: rows [0, max_ty)
 
         half = C.WORLD_INITIAL_WIDTH // 2
-        self._generate_cols(-half, half, 0, C.WORLD_INITIAL_DEPTH)
-        self._place_diamond(0, DIAMOND_DEPTH)
+        initial_depth = world_depth_for_level(level)
+        self._generate_cols(-half, half, 0, initial_depth)
+        self._place_diamond(0, diamond_depth_for_level(level))
 
     # ------------------------------------------------------------------ #
     #  Public API                                                          #
@@ -61,7 +72,7 @@ class World:
             self._generate_cols(self.min_tx, self.max_tx, self.max_ty, new_max_ty)
 
     def tick_fluids(self):
-        fluid_kinds = (TileKind.WATER, TileKind.LAVA)
+        fluid_kinds = (TileKind.LAVA,)
         for ty in range(self.max_ty - 2, self.surface_y() - 1, -1):
             for tx in range(self.min_tx, self.max_tx):
                 tile = self._tiles.get((tx, ty))
@@ -105,14 +116,13 @@ class World:
 
     def _cave_weights(self, cy: int) -> list[float]:
         """Lava-Wahrscheinlichkeit steigt linear mit der Tiefe.
-        Tiefe 0  → [70, 25, 5]  (kaum Lava)
-        Tiefe 200+ → [15, 5, 80] (fast nur Lava)
+        Tiefe 0  → [80, 20]  (wenig Lava)
+        Tiefe 200+ → [15, 85] (fast nur Lava)
         """
         t = min(1.0, cy / 200.0)
-        empty = 70 - 55 * t
-        water = 25 - 20 * t
-        lava  =  5 + 75 * t
-        return [empty, water, lava]
+        empty = 80 - 65 * t
+        lava  = 20 + 65 * t
+        return [empty, lava]
 
     def _generate_caves_for(self, from_tx: int, to_tx: int, from_ty: int, to_ty: int):
         """Carve caves into the given tile region."""
@@ -130,16 +140,15 @@ class World:
             cy = rng.randint(max(from_ty, self.surface_y() + 3), to_ty - 3)
             w  = rng.randint(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE)
             h  = rng.randint(C.CAVE_MIN_SIZE, max(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE // 2))
-            cave_type = rng.choices(["empty", "water", "lava"],
+            cave_type = rng.choices(["empty", "lava"],
                                     weights=self._cave_weights(cy))[0]
             for dy in range(h):
                 for dx in range(w):
                     nx, ny = cx + dx, cy + dy
                     if ny >= self.surface_y():
-                        if cave_type == "empty":
+                        # Obere Reihe immer frei lassen – sieht besser aus
+                        if cave_type == "empty" or dy == 0:
                             self._tiles[(nx, ny)] = make_air()
-                        elif cave_type == "water":
-                            self._tiles[(nx, ny)] = make_water()
                         else:
                             self._tiles[(nx, ny)] = make_lava()
 

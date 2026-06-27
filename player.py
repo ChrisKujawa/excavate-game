@@ -26,6 +26,10 @@ class Player:
         self.alive: bool = True
         self.won: bool = False
 
+        # Trail für Wurm-Verfolgung
+        self.trail: list[tuple[int, int]] = []
+        self._last_trail_pos: tuple[int, int] = (-9999, -9999)
+
         # Feedback-Text (kurz anzeigen)
         self.feedback_text: str = ""
         self.feedback_timer: int = 0
@@ -43,6 +47,7 @@ class Player:
         self._move_vertical()
         self._check_tile_effects()
         self._check_upgrades()
+        self._record_trail()
 
         if self.feedback_timer > 0:
             self.feedback_timer -= 1
@@ -209,6 +214,18 @@ class Player:
     def _show_feedback(self, text: str):
         self.feedback_text = text
         self.feedback_timer = 90  # ~1.5 Sekunden bei 60 FPS
+
+    def _record_trail(self):
+        """Aktuelle Tile-Position zum Trail hinzufügen (nur bei Positionsänderung)."""
+        tx = self.rect.centerx // C.TILE_SIZE
+        ty = self.rect.centery // C.TILE_SIZE
+        pos = (tx, ty)
+        if pos != self._last_trail_pos:
+            self.trail.append(pos)
+            self._last_trail_pos = pos
+            # Trail auf max. 10000 Einträge begrenzen
+            if len(self.trail) > 10000:
+                self.trail = self.trail[-10000:]
 
     def depth(self) -> int:
         """Aktuelle Tiefe in Tiles."""
