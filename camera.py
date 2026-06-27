@@ -10,17 +10,14 @@ class Camera:
         self.offset_y: float = 0.0
 
     def update(self, player_rect: pygame.Rect, world=None):
-        # --- Vertikal ---
+        # --- Vertikal (unendlich – kein Boden-Clamp) ---
         target_y = player_rect.centery - C.SCREEN_HEIGHT // 2
         self.offset_y += (target_y - self.offset_y) * (1 - C.CAMERA_LAG)
         self.offset_y = max(0, self.offset_y)
-        max_offset_y = C.WORLD_HEIGHT * C.TILE_SIZE - C.SCREEN_HEIGHT
-        self.offset_y = min(self.offset_y, max_offset_y)
 
         # --- Horizontal ---
         target_x = player_rect.centerx - C.SCREEN_WIDTH // 2
         self.offset_x += (target_x - self.offset_x) * (1 - C.CAMERA_LAG)
-        # Nicht vor den linken Weltrand scrollen
         if world is not None:
             min_x = world.min_tx * C.TILE_SIZE
             self.offset_x = max(min_x, self.offset_x)
@@ -37,7 +34,7 @@ class Camera:
     def visible_tile_range(self) -> tuple[int, int]:
         """Sichtbare Tile-Reihen (vertikal)."""
         first = max(0, int(self.offset_y) // C.TILE_SIZE - 1)
-        last  = min(C.WORLD_HEIGHT, first + C.SCREEN_HEIGHT // C.TILE_SIZE + 3)
+        last  = first + C.SCREEN_HEIGHT // C.TILE_SIZE + 3
         return first, last
 
     def visible_col_range(self) -> tuple[int, int]:

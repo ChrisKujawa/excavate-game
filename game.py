@@ -112,9 +112,11 @@ class Game:
         if self.state != GameState.PLAYING:
             return
 
-        # Welt horizontal expandieren bevor Spieler sich bewegt
+        # Welt horizontal und vertikal expandieren
         player_tx = self.player.rect.centerx // C.TILE_SIZE
+        player_ty = self.player.rect.bottom  // C.TILE_SIZE
         self.world.ensure_around(player_tx)
+        self.world.ensure_depth(player_ty)
 
         self.player.update(keys)
         self.camera.update(self.player.rect, self.world)
@@ -195,6 +197,9 @@ class Game:
 
     def _draw_hud(self):
         self.ui.draw_hud(self.screen, self.player)
-        zone_idx = get_zone_index(self.player.depth() + 2)
+        depth = self.player.depth()
+        zone_idx = get_zone_index(depth + 2)
         zone_name = C.ZONES[zone_idx]["name"]
+        if depth >= C.ZONES[-1]["to"]:
+            zone_name = f"{zone_name} (Tiefe {depth}m)"
         self.ui.draw_zone_name(self.screen, zone_name)

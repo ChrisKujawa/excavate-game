@@ -85,7 +85,7 @@ class TestGetZoneIndex:
             assert get_zone_index(zone["from"]) == i
 
     def test_last_zone_for_deep(self):
-        assert get_zone_index(C.WORLD_HEIGHT - 1) == len(C.ZONES) - 1
+        assert get_zone_index(C.ZONES[-1]["from"]) == len(C.ZONES) - 1
 
     def test_beyond_world_clamps(self):
         result = get_zone_index(9999)

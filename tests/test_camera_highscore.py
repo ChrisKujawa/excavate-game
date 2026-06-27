@@ -18,7 +18,6 @@ class TestCamera:
         first, last = cam.visible_tile_range()
         assert first == 0
         assert last > 0
-        assert last <= C.WORLD_HEIGHT
 
     def test_apply_shifts_rect_vertically(self):
         cam = Camera()
@@ -53,13 +52,13 @@ class TestCamera:
             cam.update(player_rect)
         assert cam.offset_y >= 0
 
-    def test_camera_never_exceeds_world(self):
+    def test_camera_follows_deep_player(self):
+        """Camera scrolls down with player deep in infinite world."""
         cam = Camera()
-        player_rect = pygame.Rect(0, C.WORLD_HEIGHT * C.TILE_SIZE, 24, 28)
+        player_rect = pygame.Rect(0, 10000, 24, 28)
         for _ in range(20):
             cam.update(player_rect)
-        max_offset = C.WORLD_HEIGHT * C.TILE_SIZE - C.SCREEN_HEIGHT
-        assert cam.offset_y <= max_offset
+        assert cam.offset_y > 0
 
     def test_world_to_screen_y(self):
         cam = Camera()

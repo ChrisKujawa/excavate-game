@@ -217,18 +217,6 @@ class TestPlayerDepth:
 
 
 class TestPlayerWorldBoundary:
-    def test_player_cannot_fall_below_world(self, world):
-        """Spieler bleibt innerhalb der Weltgrenzen."""
-        p = Player(world)
-        # Teleportiere Spieler fast ans untere Ende
-        p.rect.y = C.WORLD_HEIGHT * C.TILE_SIZE - C.PLAYER_HEIGHT - 5
-        p.vel_y = 50  # hohe Fallgeschwindigkeit
-        keys = _empty_keys()
-        for _ in range(10):
-            p._apply_gravity()
-            p._move_vertical()
-        assert p.rect.bottom <= C.WORLD_HEIGHT * C.TILE_SIZE
-
     def test_player_cannot_go_above_world(self, world):
         """Spieler bleibt über dem oberen Rand."""
         p = Player(world)
@@ -236,3 +224,15 @@ class TestPlayerWorldBoundary:
         p.vel_y = -50
         p._move_vertical()
         assert p.rect.top >= 0
+
+    def test_player_can_fall_very_deep(self, world):
+        """In der unendlichen Welt gibt es keine untere Grenze."""
+        p = Player(world)
+        p.rect.y = 9000  # sehr tief
+        p.vel_y = 10
+        # ensure world is generated there
+        world.ensure_depth(p.rect.bottom // C.TILE_SIZE + 30)
+        p._apply_gravity()
+        p._move_vertical()
+        # Player should still exist (no crash, no forced clamp)
+        assert p.rect.y > 0

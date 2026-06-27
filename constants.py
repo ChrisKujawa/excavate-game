@@ -8,10 +8,11 @@ TITLE = "Excavate Game"
 TILE_SIZE = 32
 
 # Welt-Größe in Tiles
-WORLD_HEIGHT = 200          # Tiefe der Welt
 WORLD_INITIAL_WIDTH = 50    # Startbreite (zentriert um x=0)
-WORLD_EXPAND_THRESHOLD = 20 # Spalten Abstand zum Rand bevor expandiert wird
-WORLD_EXPAND_AMOUNT = 30    # Neue Spalten pro Expansion
+WORLD_INITIAL_DEPTH = 210   # Starttiefe (genug für den Diamant bei 195)
+WORLD_EXPAND_THRESHOLD = 20 # Abstand zum Rand bevor horizontal expandiert wird
+WORLD_EXPAND_AMOUNT = 30    # Neue Spalten pro horizontaler Expansion
+WORLD_EXPAND_DEPTH = 80     # Neue Reihen pro vertikaler Expansion
 
 # Zonen (Tiefe in Tiles) – 9 Schichten
 ZONES = [

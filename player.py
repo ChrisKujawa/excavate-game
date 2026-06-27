@@ -141,16 +141,10 @@ class Player:
         else:
             self.on_ground = False
 
-        # Weltgrenzen
+        # Obere Weltgrenze (kein Boden-Limit – Welt ist unendlich tief)
         if self.rect.top < 0:
             self.rect.top = 0
             self.vel_y = 0
-
-        world_bottom = C.WORLD_HEIGHT * C.TILE_SIZE
-        if self.rect.bottom > world_bottom:
-            self.rect.bottom = world_bottom
-            self.vel_y = 0
-            self.on_ground = True
 
     def jump(self):
         if self.on_ground:
