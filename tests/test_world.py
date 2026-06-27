@@ -42,13 +42,13 @@ class TestWorldSurface:
 class TestWorldDiamond:
     def test_diamond_exists_at_bottom(self, world):
         diamond_x = world.width // 2
-        diamond_y = world.height - 3
+        diamond_y = world.height - 5
         assert world.get(diamond_x, diamond_y).kind == TileKind.DIAMOND
 
     def test_diamond_cluster(self, world):
         """Diamant sollte als 3x3 Block platziert sein."""
         diamond_x = world.width // 2
-        diamond_y = world.height - 3
+        diamond_y = world.height - 5
         count = sum(
             1 for dy in range(-1, 2)
             for dx in range(-1, 2)
@@ -66,6 +66,17 @@ class TestWorldBounds:
     def test_set_out_of_bounds_does_not_crash(self, world):
         from tile import make_air
         world.set(-1, 0, make_air())   # should not raise
+
+    def test_bottom_rows_are_bedrock(self, world):
+        """Die untersten 2 Reihen müssen unzerstörbares Bedrock sein."""
+        for tx in range(world.width):
+            assert world.get(tx, world.height - 1).kind == TileKind.BEDROCK
+            assert world.get(tx, world.height - 2).kind == TileKind.BEDROCK
+
+    def test_bedrock_cannot_be_dug(self, world):
+        """Bedrock hat hardness 99 – weit über Pickaxe-Maximum."""
+        tile = world.get(0, world.height - 1)
+        assert tile.hardness > 5
 
 
 class TestWorldRemove:

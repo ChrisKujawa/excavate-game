@@ -145,6 +145,12 @@ class Player:
             self.rect.top = 0
             self.vel_y = 0
 
+        world_bottom = C.WORLD_HEIGHT * C.TILE_SIZE
+        if self.rect.bottom > world_bottom:
+            self.rect.bottom = world_bottom
+            self.vel_y = 0
+            self.on_ground = True
+
     def jump(self):
         if self.on_ground:
             self.vel_y = C.PLAYER_JUMP
@@ -160,7 +166,7 @@ class Player:
         for ty in range(top_ty, bottom_ty + 1):
             for tx in range(left_tx, right_tx + 1):
                 tile = self.world.get(tx, ty)
-                if tile.kind in (TileKind.GROUND, TileKind.RESOURCE, TileKind.DIAMOND):
+                if tile.kind in (TileKind.GROUND, TileKind.RESOURCE, TileKind.DIAMOND, TileKind.BEDROCK):
                     return True
         return False
 

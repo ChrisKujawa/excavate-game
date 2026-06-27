@@ -3,7 +3,7 @@ import constants as C
 from tile import (
     Tile, TileKind,
     make_air, make_ground, make_resource, make_water, make_lava,
-    make_diamond, get_zone_index,
+    make_diamond, make_bedrock, get_zone_index,
 )
 
 
@@ -62,6 +62,8 @@ class World:
             for tx in range(self.width):
                 if ty < self.surface_y():
                     row.append(make_air())
+                elif ty >= self.height - 2:
+                    row.append(make_bedrock())   # unzerstörbarer Boden
                 else:
                     zi = get_zone_index(ty)
                     tile = self._maybe_resource(tx, ty, zi)
@@ -70,13 +72,13 @@ class World:
 
         # 2) Riesigen Diamant am Boden platzieren (Mitte)
         diamond_x = self.width // 2
-        diamond_y = self.height - 3
+        diamond_y = self.height - 5   # 2 Reihen Abstand zum Bedrock
         self.grid[diamond_y][diamond_x] = make_diamond()
         # Diamant ist 3x3 groß damit man ihn gut sieht
         for dy in range(-1, 2):
             for dx in range(-1, 2):
                 nx, ny = diamond_x + dx, diamond_y + dy
-                if 0 <= nx < self.width and 0 <= ny < self.height:
+                if 0 <= nx < self.width and 0 <= ny < self.height - 2:
                     if not (dx == 0 and dy == 0):
                         self.grid[ny][nx] = make_diamond()
 

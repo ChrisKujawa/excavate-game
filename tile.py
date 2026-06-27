@@ -5,12 +5,13 @@ import constants as C
 
 
 class TileKind(Enum):
-    AIR     = auto()
-    GROUND  = auto()   # abbaubares Erdreich/Stein
-    RESOURCE = auto()  # Ressource (Kohle, Eisen, etc.)
-    WATER   = auto()
-    LAVA    = auto()
-    DIAMOND = auto()   # Riesiger Diamant – Win-Tile
+    AIR      = auto()
+    GROUND   = auto()   # abbaubares Erdreich/Stein
+    RESOURCE = auto()   # Ressource (Kohle, Eisen, etc.)
+    WATER    = auto()
+    LAVA     = auto()
+    DIAMOND  = auto()   # Riesiger Diamant – Win-Tile
+    BEDROCK  = auto()   # Unzerstörbarer Boden
 
 
 @dataclass
@@ -61,6 +62,10 @@ def make_diamond() -> Tile:
         resource_name="diamant",
         points=9999,
     )
+
+
+def make_bedrock() -> Tile:
+    return Tile(kind=TileKind.BEDROCK, hardness=99, color=(15, 10, 15))
 
 
 def get_zone_index(tile_y: int) -> int:
