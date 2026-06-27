@@ -142,7 +142,13 @@ class TouchControls:
             surface.blit(bg, btn.rect.topleft)
             pygame.draw.rect(surface, border, btn.rect, 2, border_radius=12)
 
-            # Arrow triangle
+            # Sub-label (rendered first so its height can position the arrow)
+            sub_surf = f_sub.render(btn.sub_label, True, sub_fg)
+            sub_x = btn.rect.centerx - sub_surf.get_width() // 2
+            sub_y = btn.rect.bottom - sub_surf.get_height() - 5
+            surface.blit(sub_surf, (sub_x, sub_y))
+
+            # Arrow triangle (centred in the space above the sub-label)
             cx2 = btn.rect.centerx
             cy2 = btn.rect.top + (btn.rect.height - sub_surf.get_height() - 5) // 2
             s = min(btn.rect.width, btn.rect.height) // 4
@@ -156,10 +162,4 @@ class TouchControls:
             else:  # down
                 pts = [(cx2, cy2 + s), (cx2 - s, cy2 - s), (cx2 + s, cy2 - s)]
             pygame.draw.polygon(surface, fg, pts)
-
-            # Sub-label at the bottom of the button
-            sub_surf = f_sub.render(btn.sub_label, True, sub_fg)
-            sub_x = btn.rect.centerx - sub_surf.get_width() // 2
-            sub_y = btn.rect.bottom - sub_surf.get_height() - 5
-            surface.blit(sub_surf, (sub_x, sub_y))
 
