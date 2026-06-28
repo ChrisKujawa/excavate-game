@@ -27,10 +27,10 @@ class UI:
 
         lines = [
             f"Level:    {level} / {C.MAX_LEVELS}",
-            f"Tiefe:    {player.depth()} m",
-            f"Punkte:   {player.points}",
-            f"Spitzhacke: Lv {player.pickaxe_level}",
-            "Leben:",
+            f"Depth:    {player.depth()} m",
+            f"Score:    {player.points}",
+            f"Pickaxe:  Lv {player.pickaxe_level}",
+            "HP:",
         ]
 
         # Hintergrund-Box
@@ -55,18 +55,18 @@ class UI:
                              border_radius=2)
 
         # Timer oben rechts
-        timer_surf = self.font_medium.render(f"Zeit: {seconds}s", True, time_color)
+        timer_surf = self.font_medium.render(f"Time: {seconds}s", True, time_color)
         tx = surface.get_width() - timer_surf.get_width() - 10
         surface.blit(timer_surf, (tx, pad))
 
         # Worm-Warnung
         if worm is not None and worm.is_active:
-            warn_surf = self.font_medium.render("⚠ WURM NAHT!", True, (220, 40, 40))
+            warn_surf = self.font_medium.render("⚠ WORM INCOMING!", True, (220, 40, 40))
             wx = surface.get_width() - warn_surf.get_width() - 10
             surface.blit(warn_surf, (wx, pad + 30))
         elif worm is not None and not worm.is_active:
             delay_s = int(worm.delay_seconds)
-            info_surf = self.font_small.render(f"Wurm in {delay_s}s", True, (255, 160, 50))
+            info_surf = self.font_small.render(f"Worm in {delay_s}s", True, (255, 160, 50))
             wx = surface.get_width() - info_surf.get_width() - 10
             surface.blit(info_surf, (wx, pad + 30))
 
@@ -87,20 +87,20 @@ class UI:
         cx = sw // 2
 
         if reason == "timeout":
-            title_text  = "ZEIT ABGELAUFEN!"
+            title_text  = "TIME'S UP!"
             title_color = (240, 140, 0)
         else:
             title_text  = "GAME OVER"
             title_color = (220, 50, 50)
 
         title = self.font_large.render(title_text, True, title_color)
-        sub   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_WHITE)
+        sub   = self.font_medium.render(f"Score: {points}", True, C.COLOR_WHITE)
         surface.blit(title, (cx - title.get_width() // 2, 60))
         surface.blit(sub,   (cx - sub.get_width()   // 2, 115))
 
         self._draw_highscore_table(surface, cx, 165)
 
-        hint = self.font_small.render("Drücke R für Neustart", True, C.COLOR_HUD_TEXT)
+        hint = self.font_small.render("Press R to restart", True, C.COLOR_HUD_TEXT)
         surface.blit(hint, (cx - hint.get_width() // 2, sh - 40))
 
     def draw_win(self, surface: pygame.Surface, points: int):
@@ -111,14 +111,14 @@ class UI:
 
         cx = sw // 2
 
-        title = self.font_large.render("<> ALLE LEVEL GESCHAFFT! <>", True, (0, 230, 255))
-        sub   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_WHITE)
+        title = self.font_large.render("<> ALL LEVELS COMPLETE! <>", True, (0, 230, 255))
+        sub   = self.font_medium.render(f"Score: {points}", True, C.COLOR_WHITE)
         surface.blit(title, (cx - title.get_width() // 2, 60))
         surface.blit(sub,   (cx - sub.get_width()   // 2, 115))
 
         self._draw_highscore_table(surface, cx, 165)
 
-        hint = self.font_small.render("Drücke R für Neustart", True, C.COLOR_HUD_TEXT)
+        hint = self.font_small.render("Press R to restart", True, C.COLOR_HUD_TEXT)
         surface.blit(hint, (cx - hint.get_width() // 2, sh - 40))
 
     def draw_level_complete(self, surface: pygame.Surface, level: int, points: int):
@@ -130,12 +130,12 @@ class UI:
 
         cx = sw // 2
 
-        title = self.font_large.render(f"LEVEL {level} GESCHAFFT!", True, (80, 255, 120))
+        title = self.font_large.render(f"LEVEL {level} COMPLETE!", True, (80, 255, 120))
         next_l = level + 1
         sub   = self.font_medium.render(
-            f"Weiter zu Level {next_l} von {C.MAX_LEVELS}...", True, C.COLOR_WHITE)
-        pts   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_UPGRADE)
-        hint  = self.font_small.render("R / ENTER / Tippen zum Weitermachen", True, (180, 180, 180))
+            f"Continuing to Level {next_l} of {C.MAX_LEVELS}...", True, C.COLOR_WHITE)
+        pts   = self.font_medium.render(f"Score: {points}", True, C.COLOR_UPGRADE)
+        hint  = self.font_small.render("R / ENTER / Tap to continue", True, (180, 180, 180))
 
         surface.blit(title, (cx - title.get_width() // 2, sh // 2 - 90))
         surface.blit(sub,   (cx - sub.get_width()   // 2, sh // 2 - 30))
@@ -144,16 +144,16 @@ class UI:
 
     def _draw_highscore_table(self, surface: pygame.Surface, cx: int, y: int):
         """Gemeinsame Highscore-Tabelle für Game-Over und Win."""
-        hs_title = self.font_medium.render("-- Bestenliste --", True, C.COLOR_UPGRADE)
+        hs_title = self.font_medium.render("-- Highscores --", True, C.COLOR_UPGRADE)
         surface.blit(hs_title, (cx - hs_title.get_width() // 2, y))
         scores = hs.load()
         if scores:
             for i, entry in enumerate(scores):
-                line = f"{i+1}. {entry['name']:<12} {entry['points']:>6} Pkt"
+                line = f"{i+1}. {entry['name']:<12} {entry['points']:>6} pts"
                 s = self.font_small.render(line, True, C.COLOR_WHITE)
                 surface.blit(s, (cx - s.get_width() // 2, y + 38 + i * 24))
         else:
-            none_s = self.font_small.render("Noch keine Eintrage", True, (140, 140, 140))
+            none_s = self.font_small.render("No entries yet", True, (140, 140, 140))
             surface.blit(none_s, (cx - none_s.get_width() // 2, y + 38))
 
     def draw_zone_name(self, surface: pygame.Surface, zone_name: str):
@@ -173,22 +173,22 @@ class UI:
 
         # --- Titel ---
         title = self.font_large.render("EXCAVATE!", True, (255, 215, 0))
-        sub   = self.font_medium.render("Grab dich zum großen Diamanten!", True, C.COLOR_WHITE)
-        hint  = self.font_small.render("Tippe oder drücke ENTER zum Starten", True, (180, 180, 180))
+        sub   = self.font_medium.render("Dig your way to the giant diamond!", True, C.COLOR_WHITE)
+        hint  = self.font_small.render("Tap or press ENTER to start", True, (180, 180, 180))
 
         surface.blit(title, (cx - title.get_width() // 2, 55))
         surface.blit(sub,   (cx - sub.get_width()   // 2, 105))
 
         # --- Steuerung ---
         controls = [
-            "< >        Bewegen / Graben",
-            "^  / SPACE  Springen",
-            "v           Nach unten graben",
-            "R           Neustart",
-            "F11         Vollbild an/aus",
+            "< >        Move / Dig",
+            "^  / SPACE  Jump",
+            "v           Dig down",
+            "R           Restart",
+            "F11         Toggle fullscreen",
         ]
         ctrl_y = 155
-        ctrl_title = self.font_small.render("-- Steuerung --", True, (180, 180, 255))
+        ctrl_title = self.font_small.render("-- Controls --", True, (180, 180, 255))
         surface.blit(ctrl_title, (cx - ctrl_title.get_width() // 2, ctrl_y))
         for i, line in enumerate(controls):
             s = self.font_small.render(line, True, (200, 200, 255))
@@ -197,15 +197,15 @@ class UI:
         # --- Highscores ---
         scores = hs.load()
         hs_y = 310
-        hs_title = self.font_medium.render("-- Bestenliste --", True, C.COLOR_UPGRADE)
+        hs_title = self.font_medium.render("-- Highscores --", True, C.COLOR_UPGRADE)
         surface.blit(hs_title, (cx - hs_title.get_width() // 2, hs_y))
         if scores:
             for i, entry in enumerate(scores):
-                line = f"{i+1}. {entry['name']:<12} {entry['points']:>6} Pkt"
+                line = f"{i+1}. {entry['name']:<12} {entry['points']:>6} pts"
                 s = self.font_small.render(line, True, C.COLOR_WHITE)
                 surface.blit(s, (cx - s.get_width() // 2, hs_y + 35 + i * 22))
         else:
-            none_s = self.font_small.render("Noch keine Eintrage", True, (140, 140, 140))
+            none_s = self.font_small.render("No entries yet", True, (140, 140, 140))
             surface.blit(none_s, (cx - none_s.get_width() // 2, hs_y + 35))
 
         surface.blit(hint, (cx - hint.get_width() // 2, sh - 40))
@@ -281,11 +281,11 @@ class UI:
         cx = sw // 2
         cy = sh // 2
 
-        title = self.font_large.render("NEUER HIGHSCORE!", True, C.COLOR_UPGRADE)
-        pts   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_WHITE)
-        prompt = self.font_medium.render("Dein Name:", True, C.COLOR_WHITE)
+        title = self.font_large.render("NEW HIGHSCORE!", True, C.COLOR_UPGRADE)
+        pts   = self.font_medium.render(f"Score: {points}", True, C.COLOR_WHITE)
+        prompt = self.font_medium.render("Your name:", True, C.COLOR_WHITE)
         name_surf = self.font_large.render(name + "_", True, (0, 230, 255))
-        hint  = self.font_small.render("ENTER zum Speichern", True, (180, 180, 180))
+        hint  = self.font_small.render("ENTER to save", True, (180, 180, 180))
 
         surface.blit(title,     (cx - title.get_width()     // 2, cy - 120))
         surface.blit(pts,       (cx - pts.get_width()       // 2, cy - 65))

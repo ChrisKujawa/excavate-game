@@ -17,15 +17,15 @@ WORLD_EXPAND_DEPTH = 80     # Neue Reihen pro vertikaler Expansion
 
 # Zonen (Tiefe in Tiles) – 9 Schichten
 ZONES = [
-    {"name": "Erde",            "from": 0,   "to": 10,  "hardness": 1, "color": (139, 90,  43)},
-    {"name": "Bruchstein",      "from": 10,  "to": 30,  "hardness": 2, "color": (120, 120, 120)},
-    {"name": "Fester Stein",    "from": 30,  "to": 60,  "hardness": 3, "color": (80,  80,  80)},
-    {"name": "Granit",          "from": 60,  "to": 90,  "hardness": 4, "color": (60,  50,  70)},
+    {"name": "Topsoil",         "from": 0,   "to": 10,  "hardness": 1, "color": (139, 90,  43)},
+    {"name": "Rubble",          "from": 10,  "to": 30,  "hardness": 2, "color": (120, 120, 120)},
+    {"name": "Hard Rock",       "from": 30,  "to": 60,  "hardness": 3, "color": (80,  80,  80)},
+    {"name": "Granite",         "from": 60,  "to": 90,  "hardness": 4, "color": (60,  50,  70)},
     {"name": "Obsidian",        "from": 90,  "to": 120, "hardness": 5, "color": (20,  10,  30)},
     {"name": "Basalt",          "from": 120, "to": 150, "hardness": 6, "color": (45,  35,  55)},
-    {"name": "Quarz",           "from": 150, "to": 170, "hardness": 7, "color": (210, 200, 225)},
-    {"name": "Tiefer Kristall", "from": 170, "to": 190, "hardness": 8, "color": (80,  170, 200)},
-    {"name": "Urkern",          "from": 190, "to": 200, "hardness": 9, "color": (5,   3,   20)},
+    {"name": "Quartz",          "from": 150, "to": 170, "hardness": 7, "color": (210, 200, 225)},
+    {"name": "Deep Crystal",    "from": 170, "to": 190, "hardness": 8, "color": (80,  170, 200)},
+    {"name": "Primal Core",     "from": 190, "to": 200, "hardness": 9, "color": (5,   3,   20)},
 ]
 
 # Upgrade-Schwellen (Punkte zum Erreichen des nächsten Pickaxe-Levels)

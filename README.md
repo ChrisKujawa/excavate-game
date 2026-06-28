@@ -1,26 +1,26 @@
-# 🪨 Excavate Game
+# Excavate Game
 
-> ✨ **Vibe Coded** – dieses Spiel wurde von **T, E & C** gemeinsam mit [GitHub Copilot](https://github.com/features/copilot) vibe-coded. Idee → Brainstorming → Code → fertig. 🎮
+> ✨ **Vibe Coded** – this game was built by **T, E & C** together with [GitHub Copilot](https://github.com/features/copilot). Idea → Brainstorming → Code → done. 🎮
 
-Ein 2D Side-View Graber-Spiel – entwickelt von **TEC** (T, E & C) mit Python + Pygame.
-Grab dich durch unendliche Schichten, sammle Ressourcen und finde den riesigen Diamanten!
+A 2D side-view mining game – developed by **TEC** (T, E & C) with Python + Pygame.
+Dig through infinite layers, collect resources, and find the giant diamond!
 
-## 🌐 Direkt im Browser spielen
+## 🌐 Play in your browser
 
 **👉 [chriskujawa.github.io/excavate-game](https://chriskujawa.github.io/excavate-game/)**
 
-Keine Installation nötig – läuft direkt im Browser dank [Pygbag](https://pygame-web.github.io/) (WebAssembly).
+No installation needed – runs directly in the browser thanks to [Pygbag](https://pygame-web.github.io/) (WebAssembly).
 
 ---
 
-## 💻 Lokal spielen
+## 💻 Run locally
 
 ```bash
 pip install pygame-ce
 python main.py
 ```
 
-## 🧪 Tests ausführen
+## 🧪 Run tests
 
 ```bash
 pip install pytest
@@ -29,109 +29,109 @@ python -m pytest tests/ -v
 
 ---
 
-## 🎮 Steuerung
+## 🎮 Controls
 
-| Taste | Aktion |
-|-------|--------|
-| `← →` | Bewegen (gegen Wand = automatisch graben) |
-| `↑` / `SPACE` | Springen |
-| `↓` / `S` | Nach unten graben |
-| `Q` | Links graben |
-| `E` | Rechts graben |
-| `R` | Neustart |
-| `ESC` | Beenden |
+| Key | Action |
+|-----|--------|
+| `← →` | Move (walking into a wall digs automatically) |
+| `↑` / `SPACE` | Jump |
+| `↓` / `S` | Dig down |
+| `Q` | Dig left |
+| `E` | Dig right |
+| `R` | Restart |
+| `F11` | Toggle fullscreen |
+| `ESC` | Quit |
 
 ---
 
-## 🌍 Die Welt
+## 🌍 The World
 
-Die Welt ist **unendlich** – in alle Richtungen. Neue Bereiche werden on-the-fly generiert.
-Gleicher Seed = immer gleiche Welt.
+The world is **infinite** – in all directions. New areas are generated on the fly.
+Same seed = same world every time.
 
-### Tiefen-Zonen
+### Depth Zones
 
-| Zone | Tiefe | Material | Pickaxe |
+| Zone | Depth | Material | Pickaxe |
 |------|-------|----------|---------|
-| 🟫 | 0–10 | Erde | Lv 1 |
-| ⬛ | 10–30 | Bruchstein | Lv 2 |
-| 🔲 | 30–60 | Fester Stein | Lv 3 |
-| 🟪 | 60–90 | Granit | Lv 4 |
+| 🟫 | 0–10 | Topsoil | Lv 1 |
+| ⬛ | 10–30 | Rubble | Lv 2 |
+| 🔲 | 30–60 | Hard Rock | Lv 3 |
+| 🟪 | 60–90 | Granite | Lv 4 |
 | ⚫ | 90–120 | Obsidian | Lv 5 |
 | 🔵 | 120–150 | Basalt | Lv 6 |
-| ⬜ | 150–170 | Quarz | Lv 7 |
-| 💎 | 170–190 | Tiefer Kristall | Lv 8 |
-| 🌑 | 190+ | Urkern (∞) | Lv 9 |
+| ⬜ | 150–170 | Quartz | Lv 7 |
+| 💎 | 170–190 | Deep Crystal | Lv 8 |
+| 🌑 | 190+ | Primal Core (∞) | Lv 9 |
 
-### Gefahren
+### Hazards
 
-- 💧 **Wasser-Höhlen** – HP sinkt langsam. Wasser fließt nach unten!
-- 🔥 **Lava-Höhlen** – sofortiger Tod. Lava fließt nach unten!
-- Je tiefer, desto mehr Lava (5% an der Oberfläche → 80% in großer Tiefe)
+- 💧 **Water caves** – HP drops slowly. Water flows downward!
+- 🔥 **Lava caves** – instant death. Lava flows downward!
+- The deeper you go, the more lava (5% near the surface → 80% at great depth)
 
 ---
 
-## 💎 Ressourcen & Punkte
+## 💎 Resources & Points
 
-| Ressource | Punkte | Wo zu finden |
-|-----------|--------|--------------|
-| 🖤 Kohle | 5 | Oberfläche |
-| 🟤 Eisen | 15 | Bruchstein / Fester Stein |
-| 💚 Smaragd | 40 | Fester Stein / Granit |
-| ❤️ Rubin | 80 | Granit / Obsidian |
-| 💙 Saphir | 100 | Obsidian / Basalt |
+| Resource | Points | Where to find |
+|----------|--------|---------------|
+| 🖤 Coal | 5 | Surface |
+| 🟤 Iron | 15 | Rubble / Hard Rock |
+| 💚 Emerald | 40 | Hard Rock / Granite |
+| ❤️ Ruby | 80 | Granite / Obsidian |
+| 💙 Sapphire | 100 | Obsidian / Basalt |
 | 🟡 Gold | 150 | Obsidian / Basalt |
-| 🩶 Platin | 250 | Basalt / Quarz |
-| 🩷 Opal | 400 | Quarz / Tiefer Kristall |
-| 💜 Amethyst | 600 | Tiefer Kristall / Urkern |
-| 🦴 **Fossil** | **1000** | **Quarz bis Urkern (sehr selten!)** |
-| 💎 Riesdiamant | **WIN** | Tiefe 195, x=0 |
+| 🩶 Platinum | 250 | Basalt / Quartz |
+| 🩷 Opal | 400 | Quartz / Deep Crystal |
+| 💜 Amethyst | 600 | Deep Crystal / Primal Core |
+| 🦴 **Fossil** | **1000** | **Quartz to Primal Core (very rare!)** |
+| 💎 Giant Diamond | **WIN** | Depth 195, x=0 |
 
-## ⛏ Pickaxe-Upgrades
+## ⛏ Pickaxe Upgrades
 
-| Punkte | Level | Kann abbauen |
-|--------|-------|--------------|
-| 50 | Lv 2 | Bruchstein |
-| 150 | Lv 3 | Fester Stein |
-| 350 | Lv 4 | Granit |
+| Score | Level | Can mine |
+|-------|-------|----------|
+| 50 | Lv 2 | Rubble |
+| 150 | Lv 3 | Hard Rock |
+| 350 | Lv 4 | Granite |
 | 700 | Lv 5 | Obsidian |
 | 1200 | Lv 6 | Basalt |
-| 2000 | Lv 7 | Quarz |
-| 3000 | Lv 8 | Tiefer Kristall |
-| 5000 | Lv 9 | Urkern |
+| 2000 | Lv 7 | Quartz |
+| 3000 | Lv 8 | Deep Crystal |
+| 5000 | Lv 9 | Primal Core |
 
 ---
 
 ## 🏆 Highscore
 
-- Top-5 Bestenliste wird lokal gespeichert
-- Erscheint bei Tod **und** beim Diamant-Finden
-- Beim Tod mit neuem Highscore → Namenseingabe
+- Top-5 leaderboard saved locally
+- Shown on death **and** when the diamond is found
+- New highscore on death → enter your name
 
 ---
 
-## 🏗️ Projektstruktur
+## 🏗️ Project Structure
 
 ```
 excavate-game/
-├── main.py         # Einstiegspunkt (pygbag-kompatibel, async)
-├── game.py         # Spielschleife + Zustände
-├── world.py        # Prozedurale & unendlich expandierbare Welt
-├── player.py       # TEC – Spieler-Logik
-├── tile.py         # Tile-Typen
-├── camera.py       # Kamera (vertikal + horizontal, unendlich)
-├── ui.py           # HUD, Start/Game-Over/Win-Screens
-├── highscore.py    # Lokale Bestenliste (Top 5)
-├── constants.py    # Alle Konstanten
-├── tests/          # Pytest-Tests
+├── main.py         # Entry point (pygbag-compatible, async)
+├── game.py         # Game loop + states
+├── world.py        # Procedural & infinitely expandable world
+├── player.py       # TEC – player logic
+├── tile.py         # Tile types
+├── camera.py       # Camera (vertical + horizontal, infinite)
+├── ui.py           # HUD, Start/Game-Over/Win screens
+├── highscore.py    # Local leaderboard (Top 5)
+├── constants.py    # All constants
+├── worm.py         # Worm enemy
+├── tests/          # Pytest tests
 └── .github/
     └── workflows/
-        └── deploy-pages.yml  # Auto-Deploy auf GitHub Pages
+        ├── ci.yml            # Run tests on every push
+        └── deploy-pages.yml  # Auto-deploy to GitHub Pages
 ```
 
 ---
 
-> Made with ❤️ by **T**, **E** & **C**
+> Made with ❤️ by **T**, **E** & **C** — built with my kids
 
-
-
-Game build with my kids

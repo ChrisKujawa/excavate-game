@@ -95,7 +95,7 @@ class Player:
         if tile.kind in (TileKind.WATER, TileKind.LAVA, TileKind.ACID):
             return 0
         if tile.hardness > self.pickaxe_level:
-            self._show_feedback("Zu hart! (Level " + str(tile.hardness) + " nötig)")
+            self._show_feedback("Too hard! (Level " + str(tile.hardness) + " needed)")
             return 0
 
         # Gewonnen?
@@ -107,7 +107,7 @@ class Player:
         self.world.remove(dig_tx, dig_ty)
 
         if earned > 0:
-            name = tile.resource_name or "Stein"
+            name = tile.resource_name or "Stone"
             self._show_feedback(f"+{earned} ({name})")
 
         return earned
@@ -231,7 +231,7 @@ class Player:
             threshold = C.UPGRADE_THRESHOLDS[self.pickaxe_level]
             if self.points >= threshold:
                 self.pickaxe_level += 1
-                self._show_feedback(f">> Spitzhacke Level {self.pickaxe_level}!")
+                self._show_feedback(f">> Pickaxe Level {self.pickaxe_level}!")
 
     # ------------------------------------------------------------------ #
     #  Hilfsmethoden                                                       #

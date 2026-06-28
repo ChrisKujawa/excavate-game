@@ -180,7 +180,7 @@ class Game:
         # --- Name Input ---
         if self.state == GameState.NAME_INPUT:
             if key == pygame.K_RETURN:
-                name = self.input_name.strip() or "Anonym"
+                name = self.input_name.strip() or "Anonymous"
                 hs.save(name, self.player.points)
                 pygame.key.stop_text_input()
                 self.state = self._post_name_state
@@ -368,5 +368,5 @@ class Game:
         zone_idx = get_zone_index(depth + 2)
         zone_name = C.ZONES[zone_idx]["name"]
         if depth >= C.ZONES[-1]["to"]:
-            zone_name = f"{zone_name} (Tiefe {depth}m)"
+            zone_name = f"{zone_name} (Depth {depth}m)"
         self.ui.draw_zone_name(self.screen, zone_name)
