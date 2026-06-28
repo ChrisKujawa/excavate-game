@@ -5,6 +5,8 @@
 A 2D side-view mining game – developed by **TEC** (T, E & C) with Python + Pygame.
 Dig through infinite layers, collect resources, avoid worms and cave hazards!
 
+![Excavate Game Screenshot](assets/screenshot.png)
+
 ## 🌐 Play in your browser
 
 **👉 [chriskujawa.github.io/excavate-game](https://chriskujawa.github.io/excavate-game/)**
