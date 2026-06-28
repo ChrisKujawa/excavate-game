@@ -23,11 +23,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: "3.12"
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install pygame pygbag
+        run: pip install pygame-ce pygbag
 
       - name: Build with pygbag
         run: pygbag --build main.py
