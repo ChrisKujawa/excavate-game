@@ -78,7 +78,7 @@ class UI:
             x = (surface.get_width() - fb_surf.get_width()) // 2
             surface.blit(fb_surf, (x, 10))
 
-    def draw_game_over(self, surface: pygame.Surface, points: int):
+    def draw_game_over(self, surface: pygame.Surface, points: int, reason: str = "death"):
         sw, sh = surface.get_width(), surface.get_height()
         overlay = pygame.Surface((sw, sh), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 190))
@@ -86,7 +86,14 @@ class UI:
 
         cx = sw // 2
 
-        title = self.font_large.render("GAME OVER", True, (220, 50, 50))
+        if reason == "timeout":
+            title_text  = "ZEIT ABGELAUFEN!"
+            title_color = (240, 140, 0)
+        else:
+            title_text  = "GAME OVER"
+            title_color = (220, 50, 50)
+
+        title = self.font_large.render(title_text, True, title_color)
         sub   = self.font_medium.render(f"Punkte: {points}", True, C.COLOR_WHITE)
         surface.blit(title, (cx - title.get_width() // 2, 60))
         surface.blit(sub,   (cx - sub.get_width()   // 2, 115))
@@ -203,30 +210,66 @@ class UI:
 
         surface.blit(hint, (cx - hint.get_width() // 2, sh - 40))
 
+    @staticmethod
+    def draw_dwarf(surface: pygame.Surface, rect: pygame.Rect,
+                   facing: str = "right", scale: int = 1):
+        """Draw a dwarf miner with pickaxe scaled by *scale*."""
+        x, y = rect.left, rect.top
+        s = scale
+
+        HELM   = (85,  85,  100)
+        SKIN   = (215, 170, 115)
+        BEARD  = (175, 95,  25)
+        TUNIC  = (55,  75,  130)
+        HANDLE = (120, 78,  38)
+        BLADE  = (160, 160, 170)
+        EYE    = (40,  25,  15)
+
+        # Tunic (body, bottom)
+        pygame.draw.rect(surface, TUNIC,
+            pygame.Rect(x + 2*s, y + 15*s, 20*s, 13*s), border_radius=2*s)
+        # Beard (wide, rounded)
+        pygame.draw.rect(surface, BEARD,
+            pygame.Rect(x, y + 9*s, 24*s, 9*s), border_radius=3*s)
+        # Face (skin)
+        pygame.draw.rect(surface, SKIN,
+            pygame.Rect(x + 3*s, y + 5*s, 18*s, 8*s))
+        # Helmet cap
+        pygame.draw.rect(surface, HELM,
+            pygame.Rect(x + 1*s, y, 22*s, 6*s), border_radius=2*s)
+        # Helmet brim (slight overhang)
+        pygame.draw.rect(surface, HELM,
+            pygame.Rect(x - 1*s, y + 4*s, 26*s, 3*s))
+        # Eyes
+        eye_y = y + 9*s
+        pygame.draw.circle(surface, EYE, (x + 7*s,       eye_y), max(1, 2*s))
+        pygame.draw.circle(surface, EYE, (x + 17*s,      eye_y), max(1, 2*s))
+        # Pickaxe
+        lw = max(1, 2*s)
+        lw3 = max(1, 3*s)
+        if facing == "right":
+            pygame.draw.line(surface, HANDLE,
+                (x + 22*s, y + 17*s), (x + 32*s, y + 11*s), lw)
+            pygame.draw.line(surface, BLADE,
+                (x + 29*s, y + 7*s),  (x + 35*s, y + 14*s), lw3)
+        else:
+            pygame.draw.line(surface, HANDLE,
+                (x + 2*s, y + 17*s), (x - 8*s, y + 11*s), lw)
+            pygame.draw.line(surface, BLADE,
+                (x - 5*s, y + 7*s),  (x - 11*s, y + 14*s), lw3)
+
     def _draw_tec_character(self, surface: pygame.Surface, cx: int, cy: int, scale: int = 1):
-        """Zeichnet den TEC-Charakter als Mini-Figur."""
+        """Zeichnet den TEC-Zwerg als Mini-Figur."""
         w = C.PLAYER_WIDTH  * scale
         h = C.PLAYER_HEIGHT * scale
-        x = cx - w // 2
-        y = cy - h // 2
+        rect = pygame.Rect(cx - w // 2, cy - h // 2, w, h)
 
-        # Körper
-        body = pygame.Rect(x, y, w, h)
-        pygame.draw.rect(surface, C.COLOR_PLAYER, body, border_radius=4 * scale)
-
-        # Augen
-        eye_y = y + 6 * scale
-        pygame.draw.circle(surface, C.COLOR_BLACK, (x + 6 * scale, eye_y), 3 * scale)
-        pygame.draw.circle(surface, C.COLOR_BLACK, (x + w - 6 * scale, eye_y), 3 * scale)
+        self.draw_dwarf(surface, rect, facing="right", scale=scale)
 
         # Name über dem Charakter
         name_surf = self.font_medium.render(C.PLAYER_NAME, True, C.COLOR_WHITE)
-        surface.blit(name_surf, (cx - name_surf.get_width() // 2, y - name_surf.get_height() - 4))
-
-        # Pickaxe drawn as two lines (handle + head)
-        px, py = x + w + 8, cy
-        pygame.draw.line(surface, (200, 200, 200), (px, py + 8), (px + 12, py - 6), 2)
-        pygame.draw.line(surface, (200, 200, 200), (px + 7, py - 8), (px + 16, py - 1), 3)
+        surface.blit(name_surf, (cx - name_surf.get_width() // 2,
+                                 rect.top - name_surf.get_height() - 4))
 
     def draw_name_input(self, surface: pygame.Surface, name: str, points: int):
         """Eingabe-Screen für Highscore-Name."""

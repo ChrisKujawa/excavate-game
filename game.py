@@ -46,6 +46,7 @@ class Game:
         self.input_name: str = ""
         self._post_name_state: str = GameState.START
         self.level: int = 1
+        self._death_reason: str = "death"  # "death" | "timeout"
         self._new_game()
 
     def _toggle_fullscreen(self):
@@ -55,11 +56,15 @@ class Game:
                 (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
             )
         else:
-            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            self.screen = pygame.display.set_mode(
+                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+                pygame.FULLSCREEN | pygame.SCALED,
+            )
 
     def _new_game(self):
         import random
         self.level = 1
+        self._death_reason = "death"
         self.world  = World(seed=random.randint(0, 99999), level=self.level)
         self.player = Player(self.world)
         self.camera = Camera()
@@ -249,6 +254,7 @@ class Game:
         # Countdown-Timer
         self.time_left -= 1
         if self.time_left <= 0 and self.state == GameState.PLAYING:
+            self._death_reason = "timeout"
             self.player.alive = False
 
         # Wurm aktualisieren
@@ -257,6 +263,7 @@ class Game:
             player_tx = self.player.rect.centerx // C.TILE_SIZE
             player_ty = self.player.rect.centery // C.TILE_SIZE
             if self.worm.catches_player(player_tx, player_ty):
+                self._death_reason = "death"
                 self.player.alive = False
 
         if not self.player.alive and self.state == GameState.PLAYING:
@@ -298,7 +305,7 @@ class Game:
             self.touch.draw(self.screen)
 
         if self.state == GameState.GAME_OVER:
-            self.ui.draw_game_over(self.screen, self.player.points)
+            self.ui.draw_game_over(self.screen, self.player.points, self._death_reason)
         elif self.state == GameState.WIN:
             self.ui.draw_win(self.screen, self.player.points)
         elif self.state == GameState.LEVEL_COMPLETE:
@@ -334,10 +341,7 @@ class Game:
 
     def _draw_player(self):
         screen_rect = self.camera.apply(self.player.rect)
-        pygame.draw.rect(self.screen, C.COLOR_PLAYER, screen_rect, border_radius=4)
-        eye_y = screen_rect.top + 6
-        pygame.draw.circle(self.screen, C.COLOR_BLACK, (screen_rect.left + 6, eye_y), 3)
-        pygame.draw.circle(self.screen, C.COLOR_BLACK, (screen_rect.right - 6, eye_y), 3)
+        self.ui.draw_dwarf(self.screen, screen_rect, facing=self.player.facing)
         # Name above player
         name_surf = self.ui.font_small.render(C.PLAYER_NAME, True, C.COLOR_WHITE)
         nx = screen_rect.centerx - name_surf.get_width() // 2
