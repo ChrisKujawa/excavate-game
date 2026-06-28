@@ -37,9 +37,6 @@ class GameState:
 
 class Game:
     def __init__(self):
-        # With pygame.SCALED the display surface is always SCREEN_WIDTH×SCREEN_HEIGHT
-        # regardless of actual monitor resolution.  SDL handles upscaling internally
-        # so we can draw directly to it without worrying about bit-depth or size changes.
         self.screen = pygame.display.get_surface()
         self.clock  = pygame.time.Clock()
         self.ui     = UI()
@@ -53,13 +50,15 @@ class Game:
         self._new_game()
 
     def _toggle_fullscreen(self):
-        # pygame.SCALED must be kept on every set_mode call so SDL continues to
-        # present the 800×600 logical surface scaled to the window/screen.
-        display = pygame.display.get_surface()
-        is_fullscreen = bool(display.get_flags() & pygame.FULLSCREEN) if display else False
-        flags = pygame.SCALED | (0 if is_fullscreen else pygame.FULLSCREEN)
-        pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), flags, 32)
-        self.screen = pygame.display.get_surface()
+        # F11 no longer starts the game (KEYDOWN removed from start-trigger list),
+        # so set_mode() is safe — no PLAYING draw happens in the same frame.
+        is_fullscreen = bool(self.screen.get_flags() & pygame.FULLSCREEN)
+        if is_fullscreen:
+            self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+        else:
+            # (0, 0) = use monitor's native resolution so the game world fills
+            # the screen showing more tiles, same pixel size.
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
     def _new_game(self):
         import random
