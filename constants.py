@@ -100,8 +100,11 @@ WORM_MIN_INTERVAL  = 9         # Schnellstes Intervall (Level 5, ~89 % Spielersp
 WORM_SIZE          = 22        # Pixel-Größe des Wurm-Kopfs
 WORM_COLOR         = (160, 80, 20)
 
+# Anzahl Segmente pro Wurmart
+WORM_SEGMENTS      = 8
+CAVE_WORM_SEGMENTS = 5
 # Höhlenwürmer (erscheinen in leeren Höhlen)
 CAVE_WORM_DETECT_RADIUS = 10   # Tiles Erkennungsradius
 CAVE_WORM_INTERVAL      = 10   # Frames pro Schritt (~80 % Spielerspeed)
-CAVE_WORM_SIZE          = 16   # Kleiner als Hauptwurm
+CAVE_WORM_SIZE          = 16   # Kopfgröße Höhlenwurm (Pixel)
 CAVE_WORM_COLOR         = (120, 60, 15)
