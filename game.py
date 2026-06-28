@@ -37,11 +37,8 @@ class GameState:
 
 class Game:
     def __init__(self):
-        self._display = pygame.display.get_surface()
-        # self.screen is a stable off-screen surface at game resolution.
-        # It never gets recreated on fullscreen toggle, avoiding Bus Errors.
-        self.screen  = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
-        self.clock   = pygame.time.Clock()
+        self.screen = pygame.display.get_surface()
+        self.clock  = pygame.time.Clock()
         self.ui     = UI()
         self.ui.load_fonts()
         self.touch  = TouchControls()
@@ -53,12 +50,13 @@ class Game:
         self._new_game()
 
     def _toggle_fullscreen(self):
-        is_fullscreen = bool(self._display.get_flags() & pygame.FULLSCREEN)
+        is_fullscreen = bool(self.screen.get_flags() & pygame.FULLSCREEN)
         if is_fullscreen:
-            self._display = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+            self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
         else:
-            self._display = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-                                                     pygame.FULLSCREEN)
+            # pygame.FULLSCREEN only – kein SCALED (SCALED mischt Renderer-APIs → Segfault)
+            self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+                                                   pygame.FULLSCREEN)
 
     def _new_game(self):
         import random
@@ -140,13 +138,6 @@ class Game:
                 keys = _KeysWithTouch(pygame.key.get_pressed(), self.touch)
                 self._update(keys)
                 self._draw()
-                # Blit game surface onto the actual display (scales if sizes differ)
-                if self.screen is not self._display:
-                    if self._display.get_size() == self.screen.get_size():
-                        self._display.blit(self.screen, (0, 0))
-                    else:
-                        scaled = pygame.transform.scale(self.screen, self._display.get_size())
-                        self._display.blit(scaled, (0, 0))
                 pygame.display.flip()
             except Exception as e:
                 import traceback
