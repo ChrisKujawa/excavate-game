@@ -3,7 +3,9 @@
 > ✨ **Vibe Coded** – this game was built by **T, E & C** together with [GitHub Copilot](https://github.com/features/copilot). Idea → Brainstorming → Code → done. 🎮
 
 A 2D side-view mining game – developed by **TEC** (T, E & C) with Python + Pygame.
-Dig through infinite layers, collect resources, and find the giant diamond!
+Dig through infinite layers, collect resources, avoid worms and cave hazards!
+
+![Excavate Game Screenshot](assets/screenshot.png)
 
 ## 🌐 Play in your browser
 
@@ -33,8 +35,9 @@ python -m pytest tests/ -v
 
 | Key | Action |
 |-----|--------|
-| `← →` | Move (walking into a wall digs automatically) |
-| `↑` / `SPACE` | Jump |
+| `← →` / `A D` | Move (walking into a wall digs automatically) |
+| `↑` / `W` | Dig up |
+| `SPACE` | Jump |
 | `↓` / `S` | Dig down |
 | `Q` | Dig left |
 | `E` | Dig right |
@@ -46,7 +49,8 @@ python -m pytest tests/ -v
 
 ## 🌍 The World
 
-The world is **infinite** – in all directions. New areas are generated on the fly.
+The world is **infinite vertically** – new layers are generated the deeper you dig.
+The world **wraps horizontally** (Pac-Man style) – walk off one side and reappear on the other.
 Same seed = same world every time.
 
 ### Depth Zones
@@ -65,9 +69,15 @@ Same seed = same world every time.
 
 ### Hazards
 
-- 💧 **Water caves** – HP drops slowly. Water flows downward!
-- 🔥 **Lava caves** – instant death. Lava flows downward!
+- 💧 **Water caves** – HP drops slowly. Water flows downward and sideways!
+- 🔥 **Lava caves** – instant death. Lava flows downward and sideways!
+- 🧪 **Acid caves** – corrodes quickly. Acid flows too!
 - The deeper you go, the more lava (5% near the surface → 80% at great depth)
+
+### Enemies
+
+- 🐛 **Worm (TEC-Stalker)** – appears from level 2. Follows your trail through the ground! Gets faster each level (up to ~89% of your speed).
+- 🐍 **Cave Worms** – lurk in empty caves. Chase you on sight but can **only move through open air** – they can't dig through stone.
 
 ---
 
@@ -85,7 +95,7 @@ Same seed = same world every time.
 | 🩷 Opal | 400 | Quartz / Deep Crystal |
 | 💜 Amethyst | 600 | Deep Crystal / Primal Core |
 | 🦴 **Fossil** | **1000** | **Quartz to Primal Core (very rare!)** |
-| 💎 Giant Diamond | **WIN** | Depth 195, x=0 |
+| 💎 Giant Diamond | **WIN** | Depth 195, center of the world |
 
 ## ⛏ Pickaxe Upgrades
 
@@ -105,8 +115,9 @@ Same seed = same world every time.
 ## 🏆 Highscore
 
 - Top-5 leaderboard saved locally
-- Shown on death **and** when the diamond is found
-- New highscore on death → enter your name
+- Shown on death **and** timeout
+- "GAME OVER" on death, "ZEIT ABGELAUFEN!" on timer expiry
+- New highscore → enter your name
 
 ---
 
@@ -115,16 +126,18 @@ Same seed = same world every time.
 ```
 excavate-game/
 ├── main.py         # Entry point (pygbag-compatible, async)
-├── game.py         # Game loop + states
-├── world.py        # Procedural & infinitely expandable world
-├── player.py       # TEC – player logic
+├── game.py         # Game loop + states (5 states: start/play/gameover/highscore/level_complete)
+├── world.py        # Procedural world – infinite depth, wrapping horizontal
+├── player.py       # TEC – player logic, wrapping movement, all-direction digging
 ├── tile.py         # Tile types
-├── camera.py       # Camera (vertical + horizontal, infinite)
-├── ui.py           # HUD, Start/Game-Over/Win screens
+├── camera.py       # Camera (follows player vertically and horizontally)
+├── ui.py           # HUD, Start/Game-Over/Win screens, highscore display
 ├── highscore.py    # Local leaderboard (Top 5)
-├── constants.py    # All constants
-├── worm.py         # Worm enemy
-├── tests/          # Pytest tests
+├── constants.py    # All constants (zones, resources, worm params, level system)
+├── worm.py         # Worm (trail follower) + CaveWorm (air-only chaser)
+├── touch_controls.py # Mobile/touch controls
+├── assets/         # Screenshots and assets
+├── tests/          # Pytest tests (189 passing)
 └── .github/
     └── workflows/
         ├── ci.yml            # Run tests on every push

@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 *.pyo
 assets/*.png
+!assets/screenshot.png
 assets/*.wav
 assets/*.ogg
 highscores.json
