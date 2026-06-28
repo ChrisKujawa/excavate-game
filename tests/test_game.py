@@ -273,3 +273,139 @@ class TestFullscreen:
         with patch.object(game, "_toggle_fullscreen"):
             game._handle_keydown(e)
         assert game.state == GameState.START
+
+
+# ------------------------------------------------------------------ #
+#  Offscreen rendering (Bus Error regression)                          #
+# ------------------------------------------------------------------ #
+
+class TestOffscreenRendering:
+    def test_screen_is_pygame_surface(self, game):
+        """game.screen must be a plain pygame.Surface — not the display surface."""
+        assert isinstance(game.screen, pygame.Surface)
+        assert game.screen is not pygame.display.get_surface()
+
+    def test_screen_has_correct_dimensions(self, game):
+        import constants as C
+        assert game.screen.get_width()  == C.SCREEN_WIDTH
+        assert game.screen.get_height() == C.SCREEN_HEIGHT
+
+    def test_draw_start_state_does_not_raise(self, game):
+        """_draw() in START state must not crash (sanity check)."""
+        game.state = GameState.START
+        game._draw()  # must not raise
+
+    def test_draw_playing_state_does_not_raise(self, game):
+        """Regression: _draw() in PLAYING state used to SIGBUS because
+        self.screen pointed to the SDL display surface which SDL can
+        invalidate after set_mode().  Offscreen surface fixes this."""
+        game.state = GameState.PLAYING
+        game._draw()  # must not raise (was crashing with Bus Error)
+
+    def test_draw_game_over_does_not_raise(self, game):
+        game.state = GameState.GAME_OVER
+        game._draw()
+
+    def test_draw_win_does_not_raise(self, game):
+        game.state = GameState.WIN
+        game._draw()
+
+    def test_draw_does_not_write_to_display_surface(self, game):
+        """_draw() must only write to game.screen (offscreen), not the display."""
+        display_before = pygame.display.get_surface().copy()
+        game.state = GameState.PLAYING
+        game._draw()
+        # Display surface should be pixel-identical before and after _draw()
+        diff = pygame.surfarray.pixels3d(pygame.display.get_surface())
+        orig = pygame.surfarray.pixels3d(display_before)
+        import numpy as np
+        assert np.array_equal(diff, orig), "_draw() must not write directly to display surface"
+
+    def test_screen_unchanged_after_multiple_draws(self, game):
+        """game.screen object identity must be stable across multiple _draw calls."""
+        surf_ref = game.screen
+        game.state = GameState.PLAYING
+        for _ in range(5):
+            game._draw()
+        assert game.screen is surf_ref, "game.screen reference must not change during draw"
+
+
+# ------------------------------------------------------------------ #
+#  Start-screen KEYDOWN filter (Bus Error root cause regression)       #
+# ------------------------------------------------------------------ #
+
+# Simulate the event-loop "any interaction starts game" gate.
+# Previously KEYDOWN was in this list, so F11 → set_mode + PLAYING draw
+# in the same frame → Bus Error on the invalidated display surface.
+_START_TRIGGERS = (
+    pygame.MOUSEBUTTONDOWN,
+    pygame.MOUSEBUTTONUP,
+    pygame.FINGERDOWN,
+    pygame.FINGERUP,
+)
+
+
+class TestStartScreenKeyFiltering:
+    """The event loop only starts the game on pointer/touch events, not KEYDOWN.
+    Keyboard game-start is handled exclusively by _handle_keydown (ENTER/SPACE only).
+    This prevents system keys like F11 from triggering a PLAYING draw right after
+    set_mode(), which was the root cause of the Bus Error."""
+
+    def _sim_loop_transition(self, game, event):
+        """Replicate the event-loop 'any interaction starts game' check."""
+        if game.state == GameState.START and event.type in _START_TRIGGERS:
+            game.state = GameState.PLAYING
+
+    def test_keydown_f11_not_a_start_trigger(self, game):
+        e = pygame.event.Event(pygame.KEYDOWN, {"key": pygame.K_F11, "mod": 0,
+                                                 "unicode": "", "scancode": 0})
+        self._sim_loop_transition(game, e)
+        assert game.state == GameState.START
+
+    def test_keydown_enter_not_a_start_trigger(self, game):
+        """ENTER starts via _handle_keydown, not the pointer trigger."""
+        e = _keydown(pygame.K_RETURN)
+        self._sim_loop_transition(game, e)
+        assert game.state == GameState.START
+
+    def test_keydown_space_not_a_start_trigger(self, game):
+        e = _keydown(pygame.K_SPACE)
+        self._sim_loop_transition(game, e)
+        assert game.state == GameState.START
+
+    def test_keydown_arrow_not_a_start_trigger(self, game):
+        for key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN):
+            g = Game()
+            e = _keydown(key)
+            self._sim_loop_transition(g, e)
+            assert g.state == GameState.START, f"{key} should not start game"
+
+    def test_mousedown_is_a_start_trigger(self, game):
+        e = _mousedown()
+        self._sim_loop_transition(game, e)
+        assert game.state == GameState.PLAYING
+
+    def test_mouseup_is_a_start_trigger(self, game):
+        game.state = GameState.START
+        e = pygame.event.Event(pygame.MOUSEBUTTONUP, {"pos": (400, 300), "button": 1})
+        self._sim_loop_transition(game, e)
+        assert game.state == GameState.PLAYING
+
+    def test_fingerdown_is_a_start_trigger(self, game):
+        e = _fingerdown()
+        self._sim_loop_transition(game, e)
+        assert game.state == GameState.PLAYING
+
+    def test_fingerup_is_a_start_trigger(self, game):
+        game.state = GameState.START
+        e = pygame.event.Event(pygame.FINGERUP, {"finger_id": 1, "x": 0.5, "y": 0.5,
+                                                  "dx": 0, "dy": 0})
+        self._sim_loop_transition(game, e)
+        assert game.state == GameState.PLAYING
+
+    def test_trigger_only_fires_from_start_state(self, game):
+        """The pointer trigger must only act when state == START."""
+        game.state = GameState.GAME_OVER
+        e = _mousedown()
+        self._sim_loop_transition(game, e)
+        assert game.state == GameState.GAME_OVER
