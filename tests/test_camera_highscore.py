@@ -76,6 +76,50 @@ class TestCamera:
         first, last = cam.visible_col_range()
         assert last - first >= C.SCREEN_WIDTH // C.TILE_SIZE
 
+    # ------------------------------------------------------------------ #
+    #  Camera uses constants — not pygame.display.get_surface()           #
+    # ------------------------------------------------------------------ #
+
+    def test_visible_tile_range_independent_of_display_size(self):
+        """visible_tile_range() must use C.SCREEN_HEIGHT, not the display surface."""
+        from unittest.mock import patch, MagicMock
+        cam = Camera()
+        # Pretend the display is twice as tall as the game surface
+        fake_display = MagicMock()
+        fake_display.get_height.return_value = C.SCREEN_HEIGHT * 2
+        fake_display.get_width.return_value  = C.SCREEN_WIDTH  * 2
+        with patch("pygame.display.get_surface", return_value=fake_display):
+            first, last = cam.visible_tile_range()
+        expected_span = C.SCREEN_HEIGHT // C.TILE_SIZE + 3
+        assert (last - first) <= expected_span + 2   # stays near constant, not 2×
+
+    def test_visible_col_range_independent_of_display_size(self):
+        """visible_col_range() must use C.SCREEN_WIDTH, not the display surface."""
+        from unittest.mock import patch, MagicMock
+        cam = Camera()
+        fake_display = MagicMock()
+        fake_display.get_height.return_value = C.SCREEN_HEIGHT * 2
+        fake_display.get_width.return_value  = C.SCREEN_WIDTH  * 2
+        with patch("pygame.display.get_surface", return_value=fake_display):
+            first, last = cam.visible_col_range()
+        expected_span = C.SCREEN_WIDTH // C.TILE_SIZE + 3
+        assert (last - first) <= expected_span + 2
+
+    def test_update_centers_on_constant_screen_size(self):
+        """Camera target is based on C.SCREEN_WIDTH/HEIGHT, not the display surface."""
+        from unittest.mock import patch, MagicMock
+        cam = Camera()
+        # Player exactly at screen centre — camera offset should converge toward 0
+        player_rect = pygame.Rect(C.SCREEN_WIDTH // 2, C.SCREEN_HEIGHT // 2, 24, 28)
+        fake_display = MagicMock()
+        fake_display.get_width.return_value  = C.SCREEN_WIDTH  * 3
+        fake_display.get_height.return_value = C.SCREEN_HEIGHT * 3
+        with patch("pygame.display.get_surface", return_value=fake_display):
+            for _ in range(30):
+                cam.update(player_rect)
+        # offset_y should stay near 0 (not grow to ~1080 as it would if using display H)
+        assert cam.offset_y < C.SCREEN_HEIGHT
+
 
 # ------------------------------------------------------------------ #
 #  Highscore Tests                                                     #

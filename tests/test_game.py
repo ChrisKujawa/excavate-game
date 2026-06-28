@@ -3,6 +3,7 @@ import pygame
 import pytest
 from unittest.mock import patch, MagicMock
 from game import Game, GameState
+import constants as C
 
 
 @pytest.fixture
@@ -396,3 +397,57 @@ class TestStartScreenKeyFiltering:
         e = _mousedown()
         self._sim_loop_transition(game, e)
         assert game.state == GameState.GAME_OVER
+
+
+# ------------------------------------------------------------------ #
+#  _present(): offscreen → display scaling                            #
+# ------------------------------------------------------------------ #
+
+class TestPresent:
+    """_present() must blit/scale the offscreen surface to the display and flip."""
+
+    def test_present_calls_display_flip(self, game):
+        fake_display = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+        with patch("pygame.display.get_surface", return_value=fake_display), \
+             patch("pygame.display.flip") as mock_flip:
+            game._present()
+        mock_flip.assert_called_once()
+
+    def test_present_blits_directly_when_same_size(self, game):
+        """When display == offscreen size, blit directly (no scale)."""
+        fake_display = MagicMock()
+        fake_display.get_size.return_value = (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
+        with patch("pygame.display.get_surface", return_value=fake_display), \
+             patch("pygame.display.flip"), \
+             patch("pygame.transform.scale") as mock_scale:
+            game._present()
+        mock_scale.assert_not_called()
+        fake_display.blit.assert_called_once_with(game.screen, (0, 0))
+
+    def test_present_scales_when_display_is_larger(self, game):
+        """When display != offscreen size, transform.scale is used (stretch-to-fill)."""
+        fake_display = MagicMock()
+        fake_display.get_size.return_value = (1920, 1080)
+        with patch("pygame.display.get_surface", return_value=fake_display), \
+             patch("pygame.display.flip"), \
+             patch("pygame.transform.scale") as mock_scale:
+            game._present()
+        mock_scale.assert_called_once_with(game.screen, (1920, 1080), fake_display)
+
+    def test_present_does_nothing_if_no_display(self, game):
+        """_present() must not crash if the display surface is None."""
+        with patch("pygame.display.get_surface", return_value=None), \
+             patch("pygame.display.flip") as mock_flip:
+            game._present()
+        mock_flip.assert_not_called()
+
+    def test_present_does_not_modify_offscreen_surface(self, game):
+        """The offscreen surface must be unchanged after _present()."""
+        surf_before = game.screen
+        size_before = game.screen.get_size()
+        fake_display = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+        with patch("pygame.display.get_surface", return_value=fake_display), \
+             patch("pygame.display.flip"):
+            game._present()
+        assert game.screen is surf_before
+        assert game.screen.get_size() == size_before
