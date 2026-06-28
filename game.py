@@ -50,11 +50,20 @@ class Game:
         self._new_game()
 
     def _toggle_fullscreen(self):
-        # toggle_fullscreen() keeps the same surface and bit depth — no surface recreation.
-        # set_mode(FULLSCREEN) returns the monitor's native bit depth which can be 30-bit
-        # HDR, unsupported by pygame.draw, causing ValueError and eventual segfault.
-        pygame.display.toggle_fullscreen()
-        self.screen = pygame.display.get_surface()
+        # Explicit depth=32 ensures pygame.draw always gets a supported surface.
+        # Without it, set_mode(FULLSCREEN) can return the monitor's native depth
+        # (e.g. 30-bit HDR), which pygame.draw rejects and causes a segfault.
+        # toggle_fullscreen() is not universally supported by SDL on Linux and
+        # can leave the surface in a corrupt state when it fails.
+        is_fullscreen = bool(self.screen.get_flags() & pygame.FULLSCREEN)
+        if is_fullscreen:
+            self.screen = pygame.display.set_mode(
+                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32
+            )
+        else:
+            self.screen = pygame.display.set_mode(
+                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.FULLSCREEN, 32
+            )
 
     def _new_game(self):
         import random
