@@ -37,7 +37,11 @@ class GameState:
 
 class Game:
     def __init__(self):
-        self.screen = pygame.display.get_surface()
+        # Fixed-size offscreen surface: all rendering goes here.
+        # The camera, UI, and drawing code always work at SCREEN_WIDTH×SCREEN_HEIGHT
+        # regardless of the actual display/window resolution.  At flip time we
+        # scale this surface to fill the display (see _present).
+        self.screen = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
         self.clock  = pygame.time.Clock()
         self.ui     = UI()
         self.ui.load_fonts()
@@ -49,26 +53,30 @@ class Game:
         self._death_reason: str = "death"  # "death" | "timeout"
         self._new_game()
 
-    def _toggle_fullscreen(self):
-        is_fullscreen = bool(self.screen.get_flags() & pygame.FULLSCREEN)
-        if is_fullscreen:
-            self.screen = pygame.display.set_mode(
-                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32
-            )
+    def _present(self):
+        """Blit / scale the offscreen surface onto the real display and flip."""
+        display = pygame.display.get_surface()
+        if display is None:
+            return
+        dw, dh = display.get_size()
+        if (dw, dh) == (C.SCREEN_WIDTH, C.SCREEN_HEIGHT):
+            display.blit(self.screen, (0, 0))
         else:
-            # Explicit size + depth=32: avoids the bit-depth-0 surface that
-            # set_mode((0,0), FULLSCREEN) returns on some SDL/driver combos.
-            # SDL stretches 800×600 to fill the monitor.
+            pygame.transform.scale(self.screen, (dw, dh), display)
+        pygame.display.flip()
+
+    def _toggle_fullscreen(self):
+        # self.screen is the offscreen surface — never invalidated by set_mode.
+        display = pygame.display.get_surface()
+        is_fullscreen = bool(display.get_flags() & pygame.FULLSCREEN) if display else False
+        if is_fullscreen:
+            pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32)
+        else:
             surf = pygame.display.set_mode(
                 (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.FULLSCREEN, 32
             )
             if surf.get_bitsize() == 0:
-                # Driver rejected fullscreen — stay windowed
-                self.screen = pygame.display.set_mode(
-                    (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32
-                )
-            else:
-                self.screen = surf
+                pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32)
 
     def _new_game(self):
         import random
@@ -153,7 +161,7 @@ class Game:
                 keys = _KeysWithTouch(pygame.key.get_pressed(), self.touch)
                 self._update(keys)
                 self._draw()
-                pygame.display.flip()
+                self._present()
             except Exception as e:
                 import traceback
                 print("GAME LOOP ERROR:", e)
