@@ -3,20 +3,23 @@ import constants as C
 
 
 class Worm:
-    """Ein Wurm, der ab Level 3 den gegrabenen Tunnel des Spielers verfolgt.
+    """Ein Wurm, der ab Level 2 den gegrabenen Tunnel des Spielers verfolgt.
 
     Der Wurm startet an der Spawn-Position und folgt dem Trail (Liste der
-    besuchten Tile-Positionen) des Spielers. Nach einem konfigurierbaren
-    Vorsprung (WORM_START_DELAY Frames) beginnt er sich zu bewegen.
-    Wenn er den Spieler einholt, ist das Spiel verloren.
+    besuchten Tile-Positionen) des Spielers. Pro Level wird er schneller –
+    maximal 50 % der Spielergeschwindigkeit (WORM_MIN_INTERVAL).
     """
 
-    def __init__(self, start_tx: int, start_ty: int):
+    def __init__(self, start_tx: int, start_ty: int, level: int = 2):
         self.tx = start_tx
         self.ty = start_ty
         self._trail_index: int = 0
         self._delay: int = C.WORM_START_DELAY
         self._move_counter: int = 0
+        # Geschwindigkeit: jedes Level schneller, Minimum bei WORM_MIN_INTERVAL
+        levels_active = max(0, level - C.WORM_LEVEL_START)
+        interval = C.WORM_MOVE_INTERVAL - levels_active * 2
+        self._move_interval: int = max(C.WORM_MIN_INTERVAL, interval)
         self.rect = pygame.Rect(
             start_tx * C.TILE_SIZE + (C.TILE_SIZE - C.WORM_SIZE) // 2,
             start_ty * C.TILE_SIZE + (C.TILE_SIZE - C.WORM_SIZE) // 2,
@@ -37,7 +40,7 @@ class Worm:
             return
 
         self._move_counter += 1
-        if self._move_counter < C.WORM_MOVE_INTERVAL:
+        if self._move_counter < self._move_interval:
             return
         self._move_counter = 0
 

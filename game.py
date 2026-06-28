@@ -86,10 +86,10 @@ class Game:
         self.camera  = Camera()
         self._fluid_tick = 0
         self._init_timer()
-        # Wurm ab Level 3
+        # Wurm ab Level 2
         if self.level >= C.WORM_LEVEL_START:
             spawn_ty = self.world.surface_y()
-            self.worm = Worm(0, spawn_ty)
+            self.worm = Worm(C.WORLD_WRAP_WIDTH // 2, spawn_ty, self.level)
         else:
             self.worm = None
 
@@ -236,10 +236,9 @@ class Game:
         if self.state != GameState.PLAYING:
             return
 
-        # Welt horizontal und vertikal expandieren
+        # Welt vertikal expandieren (horizontal fest durch Wrapping)
         player_tx = self.player.rect.centerx // C.TILE_SIZE
         player_ty = self.player.rect.bottom  // C.TILE_SIZE
-        self.world.ensure_around(player_tx)
         self.world.ensure_depth(player_ty)
 
         self.player.update(keys)

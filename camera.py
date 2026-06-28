@@ -18,12 +18,9 @@ class Camera:
         self.offset_y += (target_y - self.offset_y) * (1 - C.CAMERA_LAG)
         self.offset_y = max(0, self.offset_y)
 
-        # --- Horizontal ---
+        # --- Horizontal (no clamping – world wraps) ---
         target_x = player_rect.centerx - sw // 2
         self.offset_x += (target_x - self.offset_x) * (1 - C.CAMERA_LAG)
-        if world is not None:
-            min_x = world.min_tx * C.TILE_SIZE
-            self.offset_x = max(min_x, self.offset_x)
 
     def apply(self, rect: pygame.Rect) -> pygame.Rect:
         return rect.move(-int(self.offset_x), -int(self.offset_y))

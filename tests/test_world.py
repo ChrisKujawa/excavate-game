@@ -1,4 +1,4 @@
-"""Tests für world.py – Welt-Generierung (unendliche Tiefe)."""
+"""Tests für world.py – Welt-Generierung (unendliche Tiefe, wrapping horizontal)."""
 import pytest
 from world import World, diamond_depth_for_level, world_depth_for_level
 from tile import TileKind, make_water, make_lava, make_ground, make_air
@@ -12,15 +12,14 @@ def world():
 
 class TestWorldDimensions:
     def test_initial_width(self, world):
-        assert world.width == C.WORLD_INITIAL_WIDTH
+        assert world.width == C.WORLD_WRAP_WIDTH
 
     def test_initial_depth(self, world):
         assert world.max_ty == world_depth_for_level(1)
 
     def test_min_max_tx(self, world):
-        half = C.WORLD_INITIAL_WIDTH // 2
-        assert world.min_tx == -half
-        assert world.max_tx == half
+        assert world.min_tx == 0
+        assert world.max_tx == C.WORLD_WRAP_WIDTH
 
 
 class TestWorldSurface:
@@ -40,14 +39,16 @@ class TestWorldSurface:
 class TestWorldDiamond:
     def test_diamond_exists_at_depth(self, world):
         depth = diamond_depth_for_level(1)
-        assert world.get(0, depth).kind == TileKind.DIAMOND
+        cx = C.WORLD_WRAP_WIDTH // 2
+        assert world.get(cx, depth).kind == TileKind.DIAMOND
 
     def test_diamond_cluster(self, world):
         depth = diamond_depth_for_level(1)
+        cx = C.WORLD_WRAP_WIDTH // 2
         count = sum(
             1 for dy in range(-1, 2)
             for dx in range(-1, 2)
-            if world.get(dx, depth + dy).kind == TileKind.DIAMOND
+            if world.get(cx + dx, depth + dy).kind == TileKind.DIAMOND
         )
         assert count == 9
 
@@ -56,8 +57,10 @@ class TestWorldBounds:
     def test_get_outside_y_returns_air(self, world):
         assert world.get(0, -1).kind == TileKind.AIR
 
-    def test_get_ungenerated_x_returns_air(self, world):
-        assert world.get(world.max_tx + 100, 5).kind == TileKind.AIR
+    def test_get_wraps_x_around(self, world):
+        # With wrapping, any tx is valid – get(WORLD_WRAP_WIDTH, ty) == get(0, ty)
+        for ty in range(world.surface_y(), world.surface_y() + 5):
+            assert world.get(0, ty).kind == world.get(C.WORLD_WRAP_WIDTH, ty).kind
 
     def test_get_ungenerated_depth_returns_air(self, world):
         assert world.get(0, world.max_ty + 100).kind == TileKind.AIR
@@ -67,16 +70,6 @@ class TestWorldBounds:
 
 
 class TestWorldExpansion:
-    def test_ensure_around_expands_right(self, world):
-        before = world.max_tx
-        world.ensure_around(world.max_tx - 1)
-        assert world.max_tx > before
-
-    def test_ensure_around_expands_left(self, world):
-        before = world.min_tx
-        world.ensure_around(world.min_tx + 1)
-        assert world.min_tx < before
-
     def test_ensure_depth_expands_downward(self, world):
         before = world.max_ty
         world.ensure_depth(world.max_ty + 1)
@@ -84,19 +77,12 @@ class TestWorldExpansion:
 
     def test_ensure_depth_generates_valid_tiles(self, world):
         world.ensure_depth(world.max_ty + 1)
-        # Tiles just below old bottom should exist and not be air (mostly)
         sample_ty = world.max_ty - 5
         found_solid = any(
             world.get(tx, sample_ty).kind != TileKind.AIR
             for tx in range(world.min_tx, world.max_tx)
         )
         assert found_solid
-
-    def test_no_duplicate_expansion(self, world):
-        world.ensure_around(world.max_tx - 1)
-        size_after = world.width
-        world.ensure_around(0)  # near centre, no expansion needed
-        assert world.width == size_after
 
     def test_expansion_is_deterministic(self):
         w1 = World(seed=77)
@@ -106,18 +92,6 @@ class TestWorldExpansion:
         new_ty = min(w1.max_ty, w2.max_ty) - 5
         for tx in range(w1.min_tx, w1.max_tx):
             assert w1.get(tx, new_ty).kind == w2.get(tx, new_ty).kind
-
-    def test_horizontal_expansion_matches_current_depth(self, world):
-        """New columns go as deep as existing world."""
-        old_max = world.max_tx
-        world.ensure_around(world.max_tx - 1)
-        # New columns should have tiles at the deepest generated row
-        ty = world.max_ty - 5
-        found = any(
-            world.get(tx, ty).kind != TileKind.AIR
-            for tx in range(old_max, world.max_tx)
-        )
-        assert found
 
 
 class TestWorldRemove:
@@ -131,13 +105,11 @@ class TestCaveDepthScaling:
     def test_shallow_mostly_empty(self):
         w = World(seed=1)
         weights = w._cave_weights(0)
-        # empty >> lava near surface
         assert weights[0] > weights[1]   # empty > lava
 
     def test_deep_mostly_lava(self):
         w = World(seed=1)
         weights = w._cave_weights(300)
-        # lava >> empty deep down
         assert weights[1] > weights[0]   # lava > empty
 
     def test_weights_increase_with_depth(self):
@@ -235,3 +207,17 @@ class TestFluidSimulation:
             w.set(5, ty, make_ground(0))
         w.tick_fluids()
         assert w.get(5, 10).kind == TileKind.LAVA
+
+    def test_fluid_spreads_sideways_on_solid_floor(self):
+        """Fluid on a solid floor spreads left or right."""
+        w = self._make_fresh_world()
+        # Place lava on top of a solid platform
+        w.set(5, 10, make_lava())
+        w.set(5, 11, make_ground(0))
+        w.tick_fluids()
+        # Lava should have spread to at least one neighbor
+        spread = (
+            w.get(4, 10).kind == TileKind.LAVA or
+            w.get(6, 10).kind == TileKind.LAVA
+        )
+        assert spread

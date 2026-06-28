@@ -7,10 +7,11 @@ class Player:
     def __init__(self, world):
         self.world = world
         # Spawn an der Oberfläche, horizontal zentriert
-        # Spawn at world centre (x=0), just above surface
+        # Spawn at world centre, just above surface
         spawn_ty = world.surface_y()
+        spawn_tx = C.WORLD_WRAP_WIDTH // 2
         self.rect = pygame.Rect(
-            (C.TILE_SIZE - C.PLAYER_WIDTH) // 2,   # x=0 centre
+            spawn_tx * C.TILE_SIZE + (C.TILE_SIZE - C.PLAYER_WIDTH) // 2,
             spawn_ty * C.TILE_SIZE - C.PLAYER_HEIGHT,
             C.PLAYER_WIDTH,
             C.PLAYER_HEIGHT,
@@ -130,9 +131,12 @@ class Player:
             direction = "left" if dx < 0 else "right"
             self.try_dig(direction)
 
-        # Weltgrenzen (links: nicht vor den generierten Bereich)
-        left_limit = self.world.min_tx * C.TILE_SIZE
-        self.rect.x = max(left_limit, self.rect.x)
+        # Horizontale Weltgrenze: Pac-Man-Wrapping
+        world_px = C.WORLD_WRAP_WIDTH * C.TILE_SIZE
+        if self.rect.right <= 0:
+            self.rect.x = world_px - self.rect.width
+        elif self.rect.left >= world_px:
+            self.rect.x = 0
 
     def _apply_gravity(self):
         self.vel_y += C.GRAVITY

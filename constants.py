@@ -11,10 +11,8 @@ IS_WEB = sys.platform == "emscripten"
 TILE_SIZE = 32
 
 # Welt-Größe in Tiles
-WORLD_INITIAL_WIDTH = 50    # Startbreite (zentriert um x=0)
+WORLD_WRAP_WIDTH  = 60    # Feste Breite der Welt – Spieler kommt links/rechts wieder rein
 WORLD_INITIAL_DEPTH = 210   # Starttiefe (genug für den Diamant bei 195)
-WORLD_EXPAND_THRESHOLD = 20 # Abstand zum Rand bevor horizontal expandiert wird
-WORLD_EXPAND_AMOUNT = 30    # Neue Spalten pro horizontaler Expansion
 WORLD_EXPAND_DEPTH = 80     # Neue Reihen pro vertikaler Expansion
 
 # Zonen (Tiefe in Tiles) – 9 Schichten
@@ -95,8 +93,9 @@ LEVEL_TIME_SECONDS = [120, 150, 180, 210, 240]
 LEVEL_WORLD_DEPTHS = [80, 130, 185, 215, 225]
 
 # Wurm
-WORM_LEVEL_START = 3         # Ab welchem Level der Wurm erscheint
-WORM_START_DELAY = 600       # 10 Sekunden Vorsprung bei 60 FPS
-WORM_MOVE_INTERVAL = 12      # Frames zwischen Wurm-Schritten
+WORM_LEVEL_START  = 2         # Ab welchem Level der Wurm erscheint
+WORM_START_DELAY  = 600       # 10 Sekunden Vorsprung bei 60 FPS
+WORM_MOVE_INTERVAL = 24       # Frames zwischen Wurm-Schritten (Level 2, langsam)
+WORM_MIN_INTERVAL  = 16       # Schnellstes Intervall ≈ 50 % Spielergeschwindigkeit
 WORM_SIZE = 22               # Pixel-Größe des Wurm-Kopfs
 WORM_COLOR = (160, 80, 20)
