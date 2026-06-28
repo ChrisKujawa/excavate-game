@@ -206,39 +206,47 @@ class TestCaveWorms:
 
 class TestFullscreen:
     def test_screen_is_display_surface(self, game):
-        """game.screen must be the display surface so camera dimensions match."""
         assert game.screen is pygame.display.get_surface()
 
     def test_toggle_fullscreen_windowed_to_fullscreen(self, game):
-        """Windowed → fullscreen: set_mode called with FULLSCREEN flag."""
-        fake = MagicMock(get_flags=MagicMock(return_value=0))
-        with patch("pygame.display.set_mode", return_value=fake) as mock_set_mode:
+        """Windowed → fullscreen: set_mode called with FULLSCREEN + depth=32."""
+        good_surf = MagicMock(get_flags=MagicMock(return_value=0),
+                              get_bitsize=MagicMock(return_value=32))
+        with patch("pygame.display.set_mode", return_value=good_surf) as mock_set_mode:
             game._toggle_fullscreen()
-        args, _ = mock_set_mode.call_args
+        args, kwargs = mock_set_mode.call_args
         assert args[1] & pygame.FULLSCREEN
+        assert args[2] == 32
 
     def test_toggle_fullscreen_fullscreen_to_windowed(self, game):
         """Fullscreen → windowed: set_mode called without FULLSCREEN."""
-        fake = MagicMock(get_flags=MagicMock(return_value=pygame.FULLSCREEN))
+        fake = MagicMock(get_flags=MagicMock(return_value=pygame.FULLSCREEN),
+                         get_bitsize=MagicMock(return_value=32))
         game.screen = fake
         with patch("pygame.display.set_mode", return_value=fake) as mock_set_mode:
             game._toggle_fullscreen()
         args, kwargs = mock_set_mode.call_args
-        # windowed call passes only size (no flags arg) or flags without FULLSCREEN
         flags = args[1] if len(args) > 1 else kwargs.get("flags", 0)
         assert not (flags & pygame.FULLSCREEN)
 
-    def test_toggle_fullscreen_uses_native_res_for_fullscreen(self, game):
-        """Fullscreen uses (0, 0) so SDL picks native monitor resolution."""
-        fake = MagicMock(get_flags=MagicMock(return_value=0))
-        with patch("pygame.display.set_mode", return_value=fake) as mock_set_mode:
+    def test_toggle_fullscreen_falls_back_on_zero_bitdepth(self, game):
+        """If FULLSCREEN surface has bit depth 0, fall back to windowed."""
+        bad_surf  = MagicMock(get_bitsize=MagicMock(return_value=0),
+                              get_flags=MagicMock(return_value=0))
+        good_surf = MagicMock(get_bitsize=MagicMock(return_value=32),
+                              get_flags=MagicMock(return_value=0))
+        call_count = [0]
+        def fake_set_mode(size, flags=0, depth=0):
+            call_count[0] += 1
+            return bad_surf if flags & pygame.FULLSCREEN else good_surf
+        with patch("pygame.display.set_mode", side_effect=fake_set_mode):
             game._toggle_fullscreen()
-        args, _ = mock_set_mode.call_args
-        assert args[0] == (0, 0)
+        # Must have fallen back to windowed (good_surf)
+        assert game.screen is good_surf
 
     def test_toggle_fullscreen_updates_self_screen(self, game):
-        """game.screen is refreshed to the new surface after set_mode."""
-        new_surf = MagicMock(get_flags=MagicMock(return_value=0))
+        new_surf = MagicMock(get_flags=MagicMock(return_value=0),
+                             get_bitsize=MagicMock(return_value=32))
         with patch("pygame.display.set_mode", return_value=new_surf):
             game._toggle_fullscreen()
         assert game.screen is new_surf

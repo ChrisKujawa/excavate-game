@@ -50,15 +50,25 @@ class Game:
         self._new_game()
 
     def _toggle_fullscreen(self):
-        # F11 no longer starts the game (KEYDOWN removed from start-trigger list),
-        # so set_mode() is safe — no PLAYING draw happens in the same frame.
         is_fullscreen = bool(self.screen.get_flags() & pygame.FULLSCREEN)
         if is_fullscreen:
-            self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+            self.screen = pygame.display.set_mode(
+                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32
+            )
         else:
-            # (0, 0) = use monitor's native resolution so the game world fills
-            # the screen showing more tiles, same pixel size.
-            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            # Explicit size + depth=32: avoids the bit-depth-0 surface that
+            # set_mode((0,0), FULLSCREEN) returns on some SDL/driver combos.
+            # SDL stretches 800×600 to fill the monitor.
+            surf = pygame.display.set_mode(
+                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.FULLSCREEN, 32
+            )
+            if surf.get_bitsize() == 0:
+                # Driver rejected fullscreen — stay windowed
+                self.screen = pygame.display.set_mode(
+                    (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32
+                )
+            else:
+                self.screen = surf
 
     def _new_game(self):
         import random
