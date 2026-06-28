@@ -205,50 +205,63 @@ class TestCaveWorms:
 # ------------------------------------------------------------------ #
 
 class TestFullscreen:
-    def test_screen_is_offscreen_surface_not_display(self, game):
-        """game.screen must be a plain Surface, not the display surface,
-        so set_mode() can never invalidate it."""
-        display = pygame.display.get_surface()
-        assert game.screen is not display
+    def test_screen_is_display_surface(self, game):
+        """With pygame.SCALED, game.screen IS the display surface —
+        it's always 800×600 regardless of monitor resolution."""
+        assert game.screen is pygame.display.get_surface()
 
-    def test_toggle_fullscreen_uses_set_mode_with_depth_32(self, game):
-        """set_mode must be called with depth=32 to avoid non-32-bit HDR surfaces."""
+    def test_screen_has_game_resolution(self, game):
+        """pygame.SCALED keeps the display surface at SCREEN_WIDTH×SCREEN_HEIGHT."""
+        import constants as C
+        assert game.screen.get_width()  == C.SCREEN_WIDTH
+        assert game.screen.get_height() == C.SCREEN_HEIGHT
+
+    def test_toggle_fullscreen_uses_scaled_flag(self, game):
+        """pygame.SCALED must always be in the flags so the surface stays 800×600."""
         with patch("pygame.display.set_mode") as mock_set_mode, \
              patch("pygame.display.get_surface") as mock_get:
-            mock_get.return_value = MagicMock(get_flags=lambda: 0)
+            mock_get.return_value = MagicMock(get_flags=lambda: 0, get_size=lambda: (800, 600))
+            game._toggle_fullscreen()
+        args, _ = mock_set_mode.call_args
+        assert args[1] & pygame.SCALED
+
+    def test_toggle_fullscreen_uses_depth_32(self, game):
+        """depth=32 prevents pygame.draw errors on HDR displays."""
+        with patch("pygame.display.set_mode") as mock_set_mode, \
+             patch("pygame.display.get_surface") as mock_get:
+            mock_get.return_value = MagicMock(get_flags=lambda: 0, get_size=lambda: (800, 600))
             game._toggle_fullscreen()
         args, _ = mock_set_mode.call_args
         assert args[2] == 32
 
     def test_toggle_fullscreen_windowed_to_fullscreen(self, game):
-        """From windowed → fullscreen: set_mode called with FULLSCREEN flag."""
+        """From windowed → fullscreen: FULLSCREEN flag added."""
         with patch("pygame.display.set_mode") as mock_set_mode, \
              patch("pygame.display.get_surface") as mock_get:
-            mock_get.return_value = MagicMock(get_flags=lambda: 0)
+            mock_get.return_value = MagicMock(get_flags=lambda: 0, get_size=lambda: (800, 600))
             game._toggle_fullscreen()
         args, _ = mock_set_mode.call_args
         assert args[1] & pygame.FULLSCREEN
 
     def test_toggle_fullscreen_fullscreen_to_windowed(self, game):
-        """From fullscreen → windowed: set_mode called without FULLSCREEN flag."""
+        """From fullscreen → windowed: FULLSCREEN flag removed."""
         with patch("pygame.display.set_mode") as mock_set_mode, \
              patch("pygame.display.get_surface") as mock_get:
-            mock_get.return_value = MagicMock(get_flags=lambda: pygame.FULLSCREEN)
+            mock_get.return_value = MagicMock(get_flags=lambda: pygame.FULLSCREEN,
+                                              get_size=lambda: (800, 600))
             game._toggle_fullscreen()
         args, _ = mock_set_mode.call_args
         assert not (args[1] & pygame.FULLSCREEN)
 
-    def test_toggle_fullscreen_does_not_update_self_screen(self, game):
-        """self.screen is the offscreen surface — _toggle_fullscreen must not overwrite it."""
-        surf_before = game.screen
+    def test_toggle_fullscreen_updates_self_screen(self, game):
+        """After toggle, game.screen is refreshed from display.get_surface()."""
+        new_surf = MagicMock(get_size=lambda: (800, 600))
         with patch("pygame.display.set_mode"), \
-             patch("pygame.display.get_surface") as mock_get:
-            mock_get.return_value = MagicMock(get_flags=lambda: 0)
+             patch("pygame.display.get_surface", return_value=new_surf):
             game._toggle_fullscreen()
-        assert game.screen is surf_before
+        assert game.screen is new_surf
 
     def test_f11_key_triggers_fullscreen_toggle(self, game):
-        """F11 keydown must call _toggle_fullscreen."""
         game.state = GameState.PLAYING
         e = pygame.event.Event(pygame.KEYDOWN, {"key": pygame.K_F11, "mod": 0,
                                                  "unicode": "", "scancode": 0})
@@ -257,7 +270,6 @@ class TestFullscreen:
         mock_toggle.assert_called_once()
 
     def test_f11_does_not_change_game_state(self, game):
-        """F11 is purely a display toggle — game state should be unchanged."""
         game.state = GameState.PLAYING
         e = pygame.event.Event(pygame.KEYDOWN, {"key": pygame.K_F11, "mod": 0,
                                                  "unicode": "", "scancode": 0})
@@ -266,7 +278,6 @@ class TestFullscreen:
         assert game.state == GameState.PLAYING
 
     def test_f11_on_start_screen_does_not_start_game(self, game):
-        """F11 pressed on start screen must NOT transition to PLAYING."""
         game.state = GameState.START
         e = pygame.event.Event(pygame.KEYDOWN, {"key": pygame.K_F11, "mod": 0,
                                                  "unicode": "", "scancode": 0})
@@ -276,14 +287,12 @@ class TestFullscreen:
 
 
 # ------------------------------------------------------------------ #
-#  Offscreen rendering (Bus Error regression)                          #
+#  Rendering sanity (Bus Error regression)                             #
 # ------------------------------------------------------------------ #
 
 class TestOffscreenRendering:
     def test_screen_is_pygame_surface(self, game):
-        """game.screen must be a plain pygame.Surface — not the display surface."""
         assert isinstance(game.screen, pygame.Surface)
-        assert game.screen is not pygame.display.get_surface()
 
     def test_screen_has_correct_dimensions(self, game):
         import constants as C
@@ -291,16 +300,13 @@ class TestOffscreenRendering:
         assert game.screen.get_height() == C.SCREEN_HEIGHT
 
     def test_draw_start_state_does_not_raise(self, game):
-        """_draw() in START state must not crash (sanity check)."""
         game.state = GameState.START
-        game._draw()  # must not raise
+        game._draw()
 
     def test_draw_playing_state_does_not_raise(self, game):
-        """Regression: _draw() in PLAYING state used to SIGBUS because
-        self.screen pointed to the SDL display surface which SDL can
-        invalidate after set_mode().  Offscreen surface fixes this."""
+        """Regression: _draw() in PLAYING state used to SIGBUS on stale display ptr."""
         game.state = GameState.PLAYING
-        game._draw()  # must not raise (was crashing with Bus Error)
+        game._draw()
 
     def test_draw_game_over_does_not_raise(self, game):
         game.state = GameState.GAME_OVER
@@ -310,24 +316,12 @@ class TestOffscreenRendering:
         game.state = GameState.WIN
         game._draw()
 
-    def test_draw_does_not_write_to_display_surface(self, game):
-        """_draw() must only write to game.screen (offscreen), not the display."""
-        display_before = pygame.display.get_surface().copy()
-        game.state = GameState.PLAYING
-        game._draw()
-        # Display surface should be pixel-identical before and after _draw()
-        diff = pygame.surfarray.pixels3d(pygame.display.get_surface())
-        orig = pygame.surfarray.pixels3d(display_before)
-        import numpy as np
-        assert np.array_equal(diff, orig), "_draw() must not write directly to display surface"
-
-    def test_screen_unchanged_after_multiple_draws(self, game):
-        """game.screen object identity must be stable across multiple _draw calls."""
+    def test_screen_stable_across_draws(self, game):
         surf_ref = game.screen
         game.state = GameState.PLAYING
         for _ in range(5):
             game._draw()
-        assert game.screen is surf_ref, "game.screen reference must not change during draw"
+        assert game.screen is surf_ref
 
 
 # ------------------------------------------------------------------ #

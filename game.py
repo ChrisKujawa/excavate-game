@@ -37,13 +37,10 @@ class GameState:
 
 class Game:
     def __init__(self):
-        display = pygame.display.get_surface()
-        W = display.get_width() if display else C.SCREEN_WIDTH
-        H = display.get_height() if display else C.SCREEN_HEIGHT
-        # Offscreen surface: all game rendering goes here, never to the display
-        # surface directly. This avoids Bus Errors from stale display-surface
-        # pointers after set_mode() or SDL window events invalidate the buffer.
-        self.screen = pygame.Surface((W, H))
+        # With pygame.SCALED the display surface is always SCREEN_WIDTH×SCREEN_HEIGHT
+        # regardless of actual monitor resolution.  SDL handles upscaling internally
+        # so we can draw directly to it without worrying about bit-depth or size changes.
+        self.screen = pygame.display.get_surface()
         self.clock  = pygame.time.Clock()
         self.ui     = UI()
         self.ui.load_fonts()
@@ -56,14 +53,13 @@ class Game:
         self._new_game()
 
     def _toggle_fullscreen(self):
-        # Only change the display window mode. self.screen is the offscreen
-        # surface — it's unaffected by set_mode so there's no stale pointer.
+        # pygame.SCALED must be kept on every set_mode call so SDL continues to
+        # present the 800×600 logical surface scaled to the window/screen.
         display = pygame.display.get_surface()
         is_fullscreen = bool(display.get_flags() & pygame.FULLSCREEN) if display else False
-        if is_fullscreen:
-            pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32)
-        else:
-            pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.FULLSCREEN, 32)
+        flags = pygame.SCALED | (0 if is_fullscreen else pygame.FULLSCREEN)
+        pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), flags, 32)
+        self.screen = pygame.display.get_surface()
 
     def _new_game(self):
         import random
@@ -148,18 +144,6 @@ class Game:
                 keys = _KeysWithTouch(pygame.key.get_pressed(), self.touch)
                 self._update(keys)
                 self._draw()
-                # Present: scale offscreen surface to the display.
-                # In windowed mode sizes match → plain blit.
-                # In fullscreen the display is the monitor's native resolution
-                # so we scale to fill it (letterbox-free stretch).
-                display = pygame.display.get_surface()
-                if display is not None:
-                    dw, dh = display.get_size()
-                    sw, sh = self.screen.get_size()
-                    if (dw, dh) != (sw, sh):
-                        pygame.transform.scale(self.screen, (dw, dh), display)
-                    else:
-                        display.blit(self.screen, (0, 0))
                 pygame.display.flip()
             except Exception as e:
                 import traceback
