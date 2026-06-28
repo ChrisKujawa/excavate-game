@@ -27,6 +27,8 @@ class Player:
         self.alive: bool = True
         self.won: bool = False
 
+        self.facing: str = "right"
+
         # Trail für Wurm-Verfolgung
         self.trail: list[tuple[int, int]] = []
         self._last_trail_pos: tuple[int, int] = (-9999, -9999)
@@ -115,6 +117,11 @@ class Player:
 
         if dx == 0:
             return
+
+        if dx < 0:
+            self.facing = "left"
+        else:
+            self.facing = "right"
 
         self.rect.x += dx
         # Kollision mit Wänden → versuche Tile abzubauen
