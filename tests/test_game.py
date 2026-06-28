@@ -123,3 +123,53 @@ class TestWinTransitions:
         game.state = GameState.WIN
         game._handle_touch_nav(_mousedown())
         assert game.state == GameState.PLAYING
+
+
+class TestCaveWorms:
+    def test_world_has_cave_worms(self):
+        from world import World
+        w = World(seed=42)
+        # Empty caves should have spawned at least one cave worm
+        assert len(w.cave_worms) > 0
+
+    def test_cave_worm_activates_on_proximity(self):
+        from worm import CaveWorm
+        cw = CaveWorm(10, 20)
+        assert not cw._active
+        cw.update(10, 20)  # player is at same position
+        assert cw._active
+
+    def test_cave_worm_inactive_far_away(self):
+        from worm import CaveWorm
+        cw = CaveWorm(10, 20)
+        cw.update(100, 100)  # far away
+        assert not cw._active
+
+    def test_cave_worm_moves_toward_player(self):
+        from worm import CaveWorm
+        import constants as C
+        cw = CaveWorm(10, 20)
+        cw._active = True
+        start_tx = cw.tx
+        # Advance enough frames to trigger a move
+        for _ in range(C.CAVE_WORM_INTERVAL + 1):
+            cw.update(20, 20)  # player to the right
+        assert cw.tx > start_tx
+
+    def test_cave_worm_catches_player(self):
+        from worm import CaveWorm
+        cw = CaveWorm(10, 20)
+        cw._active = True
+        cw.tx = 5
+        cw.ty = 5
+        assert cw.catches_player(5, 5)
+        assert not cw.catches_player(5, 6)
+
+    def test_worm_speed_increases_per_level(self):
+        from worm import Worm
+        import constants as C
+        w2 = Worm(0, 0, level=2)
+        w5 = Worm(0, 0, level=5)
+        # Higher level = smaller interval = faster
+        assert w5._move_interval <= w2._move_interval
+        assert w5._move_interval >= C.WORM_MIN_INTERVAL

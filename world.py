@@ -5,6 +5,7 @@ from tile import (
     make_air, make_ground, make_resource, make_water, make_lava, make_acid,
     make_diamond, get_zone_index,
 )
+from worm import CaveWorm
 
 
 def diamond_depth_for_level(level: int) -> int:
@@ -28,6 +29,7 @@ class World:
         self.min_tx: int = 0
         self.max_tx: int = C.WORLD_WRAP_WIDTH
         self.max_ty: int = 0   # exclusive: rows [0, max_ty)
+        self.cave_worms: list[CaveWorm] = []
 
         initial_depth = world_depth_for_level(level)
         self._generate_cols(0, C.WORLD_WRAP_WIDTH, 0, initial_depth)
@@ -179,6 +181,11 @@ class World:
                 if vy >= self.surface_y():
                     tag = "roof" if vy == min_vy else "body"
                     _fill(tag, vx % C.WORLD_WRAP_WIDTH, vy)
+
+            # In leeren Höhlen lauert ein Höhlenwurm
+            if cave_type == "empty" and visited:
+                center_x = (cx % C.WORLD_WRAP_WIDTH)
+                self.cave_worms.append(CaveWorm(center_x, cy))
 
     def _place_diamond(self, cx: int, cy: int):
         """Place a 3×3 diamond cluster at (cx, cy)."""

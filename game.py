@@ -257,13 +257,22 @@ class Game:
             self.player.alive = False
 
         # Wurm aktualisieren
+        player_tx = self.player.rect.centerx // C.TILE_SIZE
+        player_ty = self.player.rect.centery // C.TILE_SIZE
         if self.worm is not None and self.player.alive:
             self.worm.update(self.player.trail)
-            player_tx = self.player.rect.centerx // C.TILE_SIZE
-            player_ty = self.player.rect.centery // C.TILE_SIZE
             if self.worm.catches_player(player_tx, player_ty):
                 self._death_reason = "death"
                 self.player.alive = False
+
+        # Höhlenwürmer aktualisieren
+        if self.player.alive:
+            for cw in self.world.cave_worms:
+                cw.update(player_tx, player_ty)
+                if cw.catches_player(player_tx, player_ty):
+                    self._death_reason = "death"
+                    self.player.alive = False
+                    break
 
         if not self.player.alive and self.state == GameState.PLAYING:
             if hs.is_highscore(self.player.points):
@@ -299,6 +308,8 @@ class Game:
         self._draw_player()
         if self.worm is not None:
             self.worm.draw(self.screen, self.camera)
+        for cw in self.world.cave_worms:
+            cw.draw(self.screen, self.camera)
         self._draw_hud()
         if C.IS_WEB:
             self.touch.draw(self.screen)

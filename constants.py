@@ -92,10 +92,16 @@ LEVEL_TIME_SECONDS = [120, 150, 180, 210, 240]
 # Welt-Starttiefe pro Level (Tiles)
 LEVEL_WORLD_DEPTHS = [80, 130, 185, 215, 225]
 
-# Wurm
-WORM_LEVEL_START  = 2         # Ab welchem Level der Wurm erscheint
-WORM_START_DELAY  = 600       # 10 Sekunden Vorsprung bei 60 FPS
-WORM_MOVE_INTERVAL = 24       # Frames zwischen Wurm-Schritten (Level 2, langsam)
-WORM_MIN_INTERVAL  = 16       # Schnellstes Intervall ≈ 50 % Spielergeschwindigkeit
-WORM_SIZE = 22               # Pixel-Größe des Wurm-Kopfs
-WORM_COLOR = (160, 80, 20)
+# Wurm (Level-Verfolger)
+WORM_LEVEL_START   = 2         # Ab welchem Level der Wurm erscheint
+WORM_START_DELAY   = 600       # 10 Sekunden Vorsprung bei 60 FPS
+WORM_MOVE_INTERVAL = 14        # Frames zwischen Schritten (Level 2 Start, ~57 % Spielerspeed)
+WORM_MIN_INTERVAL  = 9         # Schnellstes Intervall (Level 5, ~89 % Spielerspeed)
+WORM_SIZE          = 22        # Pixel-Größe des Wurm-Kopfs
+WORM_COLOR         = (160, 80, 20)
+
+# Höhlenwürmer (erscheinen in leeren Höhlen)
+CAVE_WORM_DETECT_RADIUS = 10   # Tiles Erkennungsradius
+CAVE_WORM_INTERVAL      = 10   # Frames pro Schritt (~80 % Spielerspeed)
+CAVE_WORM_SIZE          = 16   # Kleiner als Hauptwurm
+CAVE_WORM_COLOR         = (120, 60, 15)
