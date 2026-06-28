@@ -50,13 +50,11 @@ class Game:
         self._new_game()
 
     def _toggle_fullscreen(self):
-        is_fullscreen = bool(self.screen.get_flags() & pygame.FULLSCREEN)
-        if is_fullscreen:
-            self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
-        else:
-            # pygame.FULLSCREEN only – kein SCALED (SCALED mischt Renderer-APIs → Segfault)
-            self.screen = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-                                                   pygame.FULLSCREEN)
+        # toggle_fullscreen() keeps the same surface and bit depth — no surface recreation.
+        # set_mode(FULLSCREEN) returns the monitor's native bit depth which can be 30-bit
+        # HDR, unsupported by pygame.draw, causing ValueError and eventual segfault.
+        pygame.display.toggle_fullscreen()
+        self.screen = pygame.display.get_surface()
 
     def _new_game(self):
         import random
@@ -264,9 +262,14 @@ class Game:
                 self._death_reason = "death"
                 self.player.alive = False
 
-        # Höhlenwürmer aktualisieren
+        # Höhlenwürmer aktualisieren (nur innerhalb Erkennungsradius + Puffer)
         if self.player.alive:
+            cull = C.CAVE_WORM_DETECT_RADIUS + 5
             for cw in self.world.cave_worms:
+                dx = abs(cw.tx - player_tx)
+                dx = min(dx, C.WORLD_WRAP_WIDTH - dx)  # wrap-aware
+                if dx > cull and abs(cw.ty - player_ty) > cull:
+                    continue  # weit entfernt → überspringen
                 cw.update(player_tx, player_ty, self.world)
                 if cw.catches_player(player_tx, player_ty):
                     self._death_reason = "death"
