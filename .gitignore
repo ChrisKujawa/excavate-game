@@ -4,3 +4,4 @@ __pycache__/
 assets/*.png
 assets/*.wav
 assets/*.ogg
+highscores.json
