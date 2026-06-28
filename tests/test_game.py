@@ -126,35 +126,60 @@ class TestWinTransitions:
 
 
 class TestCaveWorms:
+    def _air_world(self):
+        """Minimal world stub where every tile is air."""
+        from tile import make_air
+        class AirWorld:
+            def get(self, tx, ty):
+                return make_air()
+        return AirWorld()
+
     def test_world_has_cave_worms(self):
         from world import World
         w = World(seed=42)
-        # Empty caves should have spawned at least one cave worm
         assert len(w.cave_worms) > 0
 
     def test_cave_worm_activates_on_proximity(self):
         from worm import CaveWorm
+        w = self._air_world()
         cw = CaveWorm(10, 20)
         assert not cw._active
-        cw.update(10, 20)  # player is at same position
+        cw.update(10, 20, w)
         assert cw._active
 
     def test_cave_worm_inactive_far_away(self):
         from worm import CaveWorm
+        w = self._air_world()
         cw = CaveWorm(10, 20)
-        cw.update(100, 100)  # far away
+        cw.update(100, 100, w)
         assert not cw._active
 
     def test_cave_worm_moves_toward_player(self):
         from worm import CaveWorm
         import constants as C
+        w = self._air_world()
         cw = CaveWorm(10, 20)
         cw._active = True
         start_tx = cw.tx
-        # Advance enough frames to trigger a move
         for _ in range(C.CAVE_WORM_INTERVAL + 1):
-            cw.update(20, 20)  # player to the right
+            cw.update(20, 20, w)
         assert cw.tx > start_tx
+
+    def test_cave_worm_blocked_by_solid(self):
+        """Worm stays put if every neighbour is solid."""
+        from worm import CaveWorm
+        from tile import make_ground
+        import constants as C
+        class SolidWorld:
+            def get(self, tx, ty):
+                return make_ground(0)
+        w = SolidWorld()
+        cw = CaveWorm(10, 20)
+        cw._active = True
+        start_tx, start_ty = cw.tx, cw.ty
+        for _ in range(C.CAVE_WORM_INTERVAL + 1):
+            cw.update(20, 20, w)
+        assert cw.tx == start_tx and cw.ty == start_ty
 
     def test_cave_worm_catches_player(self):
         from worm import CaveWorm

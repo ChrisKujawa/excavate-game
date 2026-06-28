@@ -63,10 +63,10 @@ class Worm:
 
 
 class CaveWorm:
-    """Ein Höhlenwurm, der in leeren Höhlen lauert und den Spieler direkt verfolgt.
+    """Ein Höhlenwurm, der in leeren Höhlen lauert und nur durch Luft-Tiles läuft.
 
-    Sobald der Spieler den Erkennungsradius betritt, erwacht der Wurm und
-    jagt den Spieler durch den Untergrund – er bohrt sich durch Gestein!
+    Sobald der Spieler den Erkennungsradius betritt, erwacht der Wurm.
+    Er bewegt sich NUR durch bereits geöffnete Gänge – er kann kein Gestein durchbohren!
     """
 
     def __init__(self, start_tx: int, start_ty: int):
@@ -81,10 +81,16 @@ class CaveWorm:
             C.CAVE_WORM_SIZE,
         )
 
-    def update(self, player_tx: int, player_ty: int):
-        # Wrap-bewusste Distanz
-        dx = player_tx - self.tx
+    def _is_passable(self, tx: int, ty: int, world) -> bool:
+        """Nur Luft-Tiles sind begehbar."""
+        from tile import TileKind
+        tile = world.get(tx % C.WORLD_WRAP_WIDTH, ty)
+        return tile.kind == TileKind.AIR
+
+    def update(self, player_tx: int, player_ty: int, world):
+        # Wrap-bewusste Distanz zum Spieler
         wrap = C.WORLD_WRAP_WIDTH
+        dx = player_tx - self.tx
         if abs(dx) > wrap // 2:
             dx -= wrap * (1 if dx > 0 else -1)
         dy = player_ty - self.ty
@@ -99,13 +105,33 @@ class CaveWorm:
             return
         self._move_counter = 0
 
-        # Einen Schritt in Richtung Spieler
+        # Kandidaten-Richtungen sortiert nach Manhattan-Annäherung an Spieler
+        dirs = []
         if abs(dx) >= abs(dy):
-            self.tx = (self.tx + (1 if dx > 0 else -1)) % wrap
-        elif dy != 0:
-            self.ty += 1 if dy > 0 else -1
-        self.rect.x = self.tx * C.TILE_SIZE + (C.TILE_SIZE - C.CAVE_WORM_SIZE) // 2
-        self.rect.y = self.ty * C.TILE_SIZE + (C.TILE_SIZE - C.CAVE_WORM_SIZE) // 2
+            if dx != 0:
+                dirs.append(((1 if dx > 0 else -1), 0))
+            if dy != 0:
+                dirs.append((0, (1 if dy > 0 else -1)))
+        else:
+            if dy != 0:
+                dirs.append((0, (1 if dy > 0 else -1)))
+            if dx != 0:
+                dirs.append(((1 if dx > 0 else -1), 0))
+        # Als Fallback auch die entgegengesetzten Richtungen versuchen
+        for d in [(1,0),(-1,0),(0,1),(0,-1)]:
+            if d not in dirs:
+                dirs.append(d)
+
+        for ddx, ddy in dirs:
+            ntx = (self.tx + ddx) % wrap
+            nty = self.ty + ddy
+            if self._is_passable(ntx, nty, world):
+                self.tx = ntx
+                self.ty = nty
+                self.rect.x = self.tx * C.TILE_SIZE + (C.TILE_SIZE - C.CAVE_WORM_SIZE) // 2
+                self.rect.y = self.ty * C.TILE_SIZE + (C.TILE_SIZE - C.CAVE_WORM_SIZE) // 2
+                break
+        # Kein freier Weg → Wurm bleibt stehen
 
     def catches_player(self, player_tx: int, player_ty: int) -> bool:
         if not self._active:

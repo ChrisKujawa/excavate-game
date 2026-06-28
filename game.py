@@ -37,8 +37,11 @@ class GameState:
 
 class Game:
     def __init__(self):
-        self.screen = pygame.display.get_surface()
-        self.clock  = pygame.time.Clock()
+        self._display = pygame.display.get_surface()
+        # self.screen is a stable off-screen surface at game resolution.
+        # It never gets recreated on fullscreen toggle, avoiding Bus Errors.
+        self.screen  = pygame.Surface((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
+        self.clock   = pygame.time.Clock()
         self.ui     = UI()
         self.ui.load_fonts()
         self.touch  = TouchControls()
@@ -50,16 +53,12 @@ class Game:
         self._new_game()
 
     def _toggle_fullscreen(self):
-        is_fullscreen = bool(self.screen.get_flags() & pygame.FULLSCREEN)
+        is_fullscreen = bool(self._display.get_flags() & pygame.FULLSCREEN)
         if is_fullscreen:
-            self.screen = pygame.display.set_mode(
-                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT)
-            )
+            self._display = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT))
         else:
-            self.screen = pygame.display.set_mode(
-                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
-                pygame.FULLSCREEN | pygame.SCALED,
-            )
+            self._display = pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT),
+                                                     pygame.FULLSCREEN)
 
     def _new_game(self):
         import random
@@ -135,10 +134,19 @@ class Game:
                             self.player.jump()
                         elif action == "dig_down":
                             self.player.try_dig("down")
+                        elif action == "dig_up":
+                            self.player.try_dig("up")
 
                 keys = _KeysWithTouch(pygame.key.get_pressed(), self.touch)
                 self._update(keys)
                 self._draw()
+                # Blit game surface onto the actual display (scales if sizes differ)
+                if self.screen is not self._display:
+                    if self._display.get_size() == self.screen.get_size():
+                        self._display.blit(self.screen, (0, 0))
+                    else:
+                        scaled = pygame.transform.scale(self.screen, self._display.get_size())
+                        self._display.blit(scaled, (0, 0))
                 pygame.display.flip()
             except Exception as e:
                 import traceback
@@ -268,7 +276,7 @@ class Game:
         # Höhlenwürmer aktualisieren
         if self.player.alive:
             for cw in self.world.cave_worms:
-                cw.update(player_tx, player_ty)
+                cw.update(player_tx, player_ty, self.world)
                 if cw.catches_player(player_tx, player_ty):
                     self._death_reason = "death"
                     self.player.alive = False

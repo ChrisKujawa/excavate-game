@@ -53,6 +53,10 @@ class Player:
         self._check_upgrades()
         self._record_trail()
 
+        # Nach oben graben (UP / W)
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            self.try_dig("up")
+
         if self.feedback_timer > 0:
             self.feedback_timer -= 1
         else:
@@ -64,7 +68,7 @@ class Player:
 
     def try_dig(self, direction: str):
         """
-        direction: 'down', 'left', 'right', 'down-left', 'down-right'
+        direction: 'down', 'up', 'left', 'right', 'down-left', 'down-right'
         Gibt Punktzahl zurück (0 wenn nicht gegraben).
         """
         tx = self.rect.centerx // C.TILE_SIZE
@@ -72,6 +76,9 @@ class Player:
 
         if direction == "down":
             dig_tx, dig_ty = tx, ty
+        elif direction == "up":
+            dig_tx = tx
+            dig_ty = (self.rect.top - 1) // C.TILE_SIZE
         elif direction == "left":
             dig_tx = (self.rect.left - 1) // C.TILE_SIZE
             dig_ty = self.rect.centery // C.TILE_SIZE
