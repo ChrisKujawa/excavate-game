@@ -23,6 +23,7 @@ class Player:
         self.points: int = 0
         self.pickaxe_level: int = 1
         self.water_timer: int = 0
+        self.acid_timer: int = 0
         self.alive: bool = True
         self.won: bool = False
 
@@ -81,7 +82,7 @@ class Player:
 
         if tile.kind == TileKind.AIR:
             return 0
-        if tile.kind in (TileKind.WATER, TileKind.LAVA):
+        if tile.kind in (TileKind.WATER, TileKind.LAVA, TileKind.ACID):
             return 0
         if tile.hardness > self.pickaxe_level:
             self._show_feedback("Zu hart! (Level " + str(tile.hardness) + " nötig)")
@@ -171,7 +172,7 @@ class Player:
         return False
 
     # ------------------------------------------------------------------ #
-    #  Tile-Effekte (Wasser, Lava)                                        #
+    #  Tile-Effekte (Wasser, Lava, Säure)                                 #
     # ------------------------------------------------------------------ #
 
     def _check_tile_effects(self):
@@ -184,13 +185,23 @@ class Player:
             self._die()
         elif tile.kind == TileKind.WATER:
             self.water_timer += 1
+            self.acid_timer = 0
             if self.water_timer >= C.WATER_DAMAGE_INTERVAL:
                 self.water_timer = 0
                 self.hp -= 1
                 if self.hp <= 0:
                     self._die()
+        elif tile.kind == TileKind.ACID:
+            self.acid_timer += 1
+            self.water_timer = 0
+            if self.acid_timer >= C.ACID_DAMAGE_INTERVAL:
+                self.acid_timer = 0
+                self.hp -= 1
+                if self.hp <= 0:
+                    self._die()
         else:
             self.water_timer = 0
+            self.acid_timer = 0
 
     # ------------------------------------------------------------------ #
     #  Upgrades                                                            #

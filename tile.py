@@ -10,6 +10,7 @@ class TileKind(Enum):
     RESOURCE = auto()   # Ressource (Kohle, Eisen, etc.)
     WATER    = auto()
     LAVA     = auto()
+    ACID     = auto()
     DIAMOND  = auto()   # Riesiger Diamant – Win-Tile
     BEDROCK  = auto()   # Unzerstörbarer Boden
 
@@ -52,6 +53,10 @@ def make_water() -> Tile:
 
 def make_lava() -> Tile:
     return Tile(kind=TileKind.LAVA, hardness=0, color=C.COLOR_LAVA)
+
+
+def make_acid() -> Tile:
+    return Tile(kind=TileKind.ACID, hardness=0, color=C.COLOR_ACID)
 
 
 def make_diamond() -> Tile:

@@ -60,6 +60,7 @@ CAVE_MAX_SIZE = 9
 COLOR_SKY        = (100, 160, 220)
 COLOR_WATER      = (30,  100, 200)
 COLOR_LAVA       = (220, 80,  0)
+COLOR_ACID       = (100, 200, 30)
 COLOR_PLAYER     = (255, 220, 50)
 COLOR_HUD_BG     = (0,   0,   0)
 COLOR_HUD_TEXT   = (255, 255, 255)
@@ -78,6 +79,7 @@ PLAYER_MAX_HP    = 5
 
 # Schaden
 WATER_DAMAGE_INTERVAL = 60
+ACID_DAMAGE_INTERVAL  = 30
 LAVA_DAMAGE            = 5
 
 # Kamera

@@ -2,7 +2,7 @@ import random
 import constants as C
 from tile import (
     Tile, TileKind,
-    make_air, make_ground, make_resource, make_lava,
+    make_air, make_ground, make_resource, make_water, make_lava, make_acid,
     make_diamond, get_zone_index,
 )
 
@@ -72,7 +72,7 @@ class World:
             self._generate_cols(self.min_tx, self.max_tx, self.max_ty, new_max_ty)
 
     def tick_fluids(self):
-        fluid_kinds = (TileKind.LAVA,)
+        fluid_kinds = (TileKind.WATER, TileKind.LAVA, TileKind.ACID)
         for ty in range(self.max_ty - 2, self.surface_y() - 1, -1):
             for tx in range(self.min_tx, self.max_tx):
                 tile = self._tiles.get((tx, ty))
@@ -115,14 +115,17 @@ class World:
         self.max_ty = max(self.max_ty, to_ty)
 
     def _cave_weights(self, cy: int) -> list[float]:
-        """Lava-Wahrscheinlichkeit steigt linear mit der Tiefe.
-        Tiefe 0  → [80, 20]  (wenig Lava)
-        Tiefe 200+ → [15, 85] (fast nur Lava)
+        """Fluid weights change linearly with depth.
+        Reihenfolge: [empty, lava, water, acid]
+        Tiefe 0   → [70, 10, 15, 5]  (viel Luft, wenig Lava, etwas Wasser)
+        Tiefe 200 → [10, 55, 5,  30] (fast nur Lava und Säure)
         """
         t = min(1.0, cy / 200.0)
-        empty = 80 - 65 * t
-        lava  = 20 + 65 * t
-        return [empty, lava]
+        empty = 70 - 60 * t
+        lava  = 10 + 45 * t
+        water = 15 - 10 * t
+        acid  =  5 + 25 * t
+        return [empty, lava, water, acid]
 
     def _generate_caves_for(self, from_tx: int, to_tx: int, from_ty: int, to_ty: int):
         """Carve caves into the given tile region."""
@@ -140,7 +143,7 @@ class World:
             cy = rng.randint(max(from_ty, self.surface_y() + 3), to_ty - 3)
             w  = rng.randint(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE)
             h  = rng.randint(C.CAVE_MIN_SIZE, max(C.CAVE_MIN_SIZE, C.CAVE_MAX_SIZE // 2))
-            cave_type = rng.choices(["empty", "lava"],
+            cave_type = rng.choices(["empty", "lava", "water", "acid"],
                                     weights=self._cave_weights(cy))[0]
             for dy in range(h):
                 for dx in range(w):
@@ -149,8 +152,12 @@ class World:
                         # Obere Reihe immer frei lassen – sieht besser aus
                         if cave_type == "empty" or dy == 0:
                             self._tiles[(nx, ny)] = make_air()
-                        else:
+                        elif cave_type == "lava":
                             self._tiles[(nx, ny)] = make_lava()
+                        elif cave_type == "water":
+                            self._tiles[(nx, ny)] = make_water()
+                        else:
+                            self._tiles[(nx, ny)] = make_acid()
 
     def _place_diamond(self, cx: int, cy: int):
         """Place a 3×3 diamond cluster at (cx, cy)."""
