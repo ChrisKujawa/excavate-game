@@ -1,7 +1,7 @@
-"""Tests for Game state transitions (start, play, game-over, win)."""
+"""Tests for Game state transitions (start, play, game-over, win) and fullscreen."""
 import pygame
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from game import Game, GameState
 
 
@@ -198,3 +198,58 @@ class TestCaveWorms:
         # Higher level = smaller interval = faster
         assert w5._move_interval <= w2._move_interval
         assert w5._move_interval >= C.WORM_MIN_INTERVAL
+
+
+# ------------------------------------------------------------------ #
+#  Fullscreen toggle                                                   #
+# ------------------------------------------------------------------ #
+
+class TestFullscreen:
+    def test_toggle_fullscreen_calls_pygame_toggle(self, game):
+        """toggle_fullscreen() must use pygame.display.toggle_fullscreen, not set_mode."""
+        fake_surf = MagicMock()
+        fake_surf.get_size.return_value = (800, 600)
+        with patch("pygame.display.toggle_fullscreen") as mock_toggle, \
+             patch("pygame.display.get_surface", return_value=fake_surf):
+            game._toggle_fullscreen()
+        mock_toggle.assert_called_once()
+
+    def test_toggle_fullscreen_updates_self_screen(self, game):
+        """After toggle, game.screen must point to the current display surface."""
+        new_surf = MagicMock()
+        new_surf.get_size.return_value = (800, 600)
+        with patch("pygame.display.toggle_fullscreen"), \
+             patch("pygame.display.get_surface", return_value=new_surf):
+            game._toggle_fullscreen()
+        assert game.screen is new_surf
+
+    def test_toggle_fullscreen_does_not_call_set_mode(self, game):
+        """set_mode with FULLSCREEN returns monitor native bit depth → crash; must not be called."""
+        fake_surf = MagicMock()
+        fake_surf.get_size.return_value = (800, 600)
+        with patch("pygame.display.set_mode") as mock_set_mode, \
+             patch("pygame.display.toggle_fullscreen"), \
+             patch("pygame.display.get_surface", return_value=fake_surf):
+            game._toggle_fullscreen()
+        mock_set_mode.assert_not_called()
+
+    def test_f11_key_triggers_fullscreen_toggle(self, game):
+        """F11 keydown must call _toggle_fullscreen."""
+        game.state = GameState.PLAYING
+        e = pygame.event.Event(pygame.KEYDOWN, {"key": pygame.K_F11, "mod": 0,
+                                                 "unicode": "", "scancode": 0})
+        with patch.object(game, "_toggle_fullscreen") as mock_toggle:
+            game._handle_keydown(e)
+        mock_toggle.assert_called_once()
+
+    def test_f11_does_not_change_game_state(self, game):
+        """F11 is purely a display toggle — game state should be unchanged."""
+        game.state = GameState.PLAYING
+        e = pygame.event.Event(pygame.KEYDOWN, {"key": pygame.K_F11, "mod": 0,
+                                                 "unicode": "", "scancode": 0})
+        fake_surf = MagicMock()
+        fake_surf.get_size.return_value = (800, 600)
+        with patch("pygame.display.toggle_fullscreen"), \
+             patch("pygame.display.get_surface", return_value=fake_surf):
+            game._handle_keydown(e)
+        assert game.state == GameState.PLAYING

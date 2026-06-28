@@ -310,8 +310,11 @@ class Game:
         self._draw_player()
         if self.worm is not None:
             self.worm.draw(self.screen, self.camera)
+        first_row, last_row = self.camera.visible_tile_range()
+        first_col, last_col = self.camera.visible_col_range()
         for cw in self.world.cave_worms:
-            cw.draw(self.screen, self.camera)
+            if first_row <= cw.ty <= last_row and first_col <= cw.tx % C.WORLD_WRAP_WIDTH <= last_col:
+                cw.draw(self.screen, self.camera)
         self._draw_hud()
         if C.IS_WEB:
             self.touch.draw(self.screen)
