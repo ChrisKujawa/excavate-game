@@ -37,7 +37,13 @@ class GameState:
 
 class Game:
     def __init__(self):
-        self.screen = pygame.display.get_surface()
+        display = pygame.display.get_surface()
+        W = display.get_width() if display else C.SCREEN_WIDTH
+        H = display.get_height() if display else C.SCREEN_HEIGHT
+        # Offscreen surface: all game rendering goes here, never to the display
+        # surface directly. This avoids Bus Errors from stale display-surface
+        # pointers after set_mode() or SDL window events invalidate the buffer.
+        self.screen = pygame.Surface((W, H))
         self.clock  = pygame.time.Clock()
         self.ui     = UI()
         self.ui.load_fonts()
@@ -50,20 +56,14 @@ class Game:
         self._new_game()
 
     def _toggle_fullscreen(self):
-        # Explicit depth=32 ensures pygame.draw always gets a supported surface.
-        # Without it, set_mode(FULLSCREEN) can return the monitor's native depth
-        # (e.g. 30-bit HDR), which pygame.draw rejects and causes a segfault.
-        # toggle_fullscreen() is not universally supported by SDL on Linux and
-        # can leave the surface in a corrupt state when it fails.
-        is_fullscreen = bool(self.screen.get_flags() & pygame.FULLSCREEN)
+        # Only change the display window mode. self.screen is the offscreen
+        # surface — it's unaffected by set_mode so there's no stale pointer.
+        display = pygame.display.get_surface()
+        is_fullscreen = bool(display.get_flags() & pygame.FULLSCREEN) if display else False
         if is_fullscreen:
-            self.screen = pygame.display.set_mode(
-                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32
-            )
+            pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), 0, 32)
         else:
-            self.screen = pygame.display.set_mode(
-                (C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.FULLSCREEN, 32
-            )
+            pygame.display.set_mode((C.SCREEN_WIDTH, C.SCREEN_HEIGHT), pygame.FULLSCREEN, 32)
 
     def _new_game(self):
         import random
@@ -116,9 +116,12 @@ class Game:
                     if event.type == pygame.QUIT:
                         running = False
 
-                    # Any user interaction starts the game from the start screen
+                    # Touch/click starts the game from the start screen.
+                    # KEYDOWN is intentionally excluded — _handle_keydown already
+                    # handles ENTER/SPACE, and we must not start the game on keys
+                    # like F11 which trigger set_mode and invalidate the display.
                     if self.state == GameState.START and event.type in (
-                        pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
+                        pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
                         pygame.FINGERDOWN, pygame.FINGERUP,
                     ):
                         self.state = GameState.PLAYING
@@ -145,6 +148,10 @@ class Game:
                 keys = _KeysWithTouch(pygame.key.get_pressed(), self.touch)
                 self._update(keys)
                 self._draw()
+                # Blit offscreen surface to the display and present
+                display = pygame.display.get_surface()
+                if display is not None:
+                    display.blit(self.screen, (0, 0))
                 pygame.display.flip()
             except Exception as e:
                 import traceback
