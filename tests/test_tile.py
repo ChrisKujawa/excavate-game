@@ -2,7 +2,7 @@
 import pytest
 from tile import (
     TileKind,
-    make_air, make_ground, make_resource, make_water, make_lava,
+    make_air, make_ground, make_resource, make_water, make_lava, make_acid,
     make_diamond, get_zone_index,
 )
 import constants as C
@@ -90,3 +90,28 @@ class TestGetZoneIndex:
     def test_beyond_world_clamps(self):
         result = get_zone_index(9999)
         assert result == len(C.ZONES) - 1
+
+
+class TestMakeAcid:
+    def test_kind(self):
+        assert make_acid().kind == TileKind.ACID
+
+    def test_color_distinct_from_smaragd(self):
+        """Acid must not look like emerald (smaragd). Both should not be predominantly green."""
+        acid_color = C.COLOR_ACID
+        smaragd_color = C.RESOURCES["smaragd"]["color"]
+        # Compute dominant channel: acid should NOT have green as its dominant channel
+        # while looking similar to smaragd. Simpler check: colors must differ significantly.
+        diff = sum(abs(a - b) for a, b in zip(acid_color, smaragd_color))
+        assert diff > 100, (
+            f"Acid {acid_color} is too similar to smaragd {smaragd_color} (diff={diff}). "
+            "Players can't distinguish them visually."
+        )
+
+    def test_acid_not_green_dominant(self):
+        """Acid color should not be dominated by green (to avoid confusion with smaragd)."""
+        r, g, b = C.COLOR_ACID
+        # Acid must not be green-dominant (g > r and g > b)
+        assert not (g > r and g > b), (
+            f"Acid color {C.COLOR_ACID} is green-dominant – too similar to smaragd/emerald."
+        )

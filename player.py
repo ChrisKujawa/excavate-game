@@ -75,7 +75,19 @@ class Player:
         ty = self.rect.bottom  // C.TILE_SIZE
 
         if direction == "down":
-            dig_tx, dig_ty = tx, ty
+            dig_ty = ty
+            # Try center column first; if that's air, try left or right foot column
+            # so the player can dig when standing at the edge of a tile.
+            center_tx = tx
+            left_tx   = self.rect.left  // C.TILE_SIZE
+            right_tx  = (self.rect.right - 1) // C.TILE_SIZE
+            for candidate in (center_tx, left_tx, right_tx):
+                t = self.world.get(candidate, dig_ty)
+                if t.kind not in (TileKind.AIR, TileKind.WATER, TileKind.LAVA, TileKind.ACID):
+                    dig_tx = candidate
+                    break
+            else:
+                dig_tx = center_tx  # all air → no-op below
         elif direction == "up":
             dig_tx = tx
             dig_ty = (self.rect.top - 1) // C.TILE_SIZE

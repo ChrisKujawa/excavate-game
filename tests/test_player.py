@@ -327,3 +327,98 @@ class TestTrail:
         if len(positions) > 1:
             # Last two should differ
             assert positions[-1] != positions[-2]
+
+
+class TestDigDownCorner:
+    """Player standing at the corner/edge of a tile should still be able to dig down."""
+
+    def _make_world_with_ledge(self):
+        """
+        Build a world where the player stands at the right edge of a ledge:
+          col:  tx-1  tx   tx+1
+          surface:  G    G    AIR   (G = ground)
+          below:    G    G    AIR
+        Player's centerx is over tx, but rect.right crosses into tx+1 (air column).
+        """
+        from world import World
+        from tile import make_air, make_ground
+        import constants as C
+        world = World(seed=0)
+        world.ensure_depth(10)
+        surf = world.surface_y()
+        tx = C.WORLD_WRAP_WIDTH // 2
+
+        # Carve column tx+1 fully open so player center is near the edge
+        for dy in range(-1, 5):
+            world.set(tx + 1, surf + dy, make_air())
+            world.set(tx + 2, surf + dy, make_air())
+        return world, tx, surf
+
+    def test_dig_down_from_center_column(self):
+        """Normal case: player center over solid tile, dig-down works."""
+        import constants as C
+        from player import Player
+        from tile import TileKind
+        world, tx, surf = self._make_world_with_ledge()
+        p = Player(world)
+        # Place player so their bottom sits exactly on the surface row
+        p.rect.x = tx * C.TILE_SIZE + (C.TILE_SIZE - C.PLAYER_WIDTH) // 2
+        p.rect.y = surf * C.TILE_SIZE - C.PLAYER_HEIGHT
+        p.pickaxe_level = 9  # can mine anything
+
+        result = p.try_dig("down")
+        tile_below = world.get(tx, surf)
+        assert tile_below.kind == TileKind.AIR or result > 0
+
+    def test_dig_down_at_right_edge_of_ledge(self):
+        """
+        Player standing at the right edge: center is over the last solid column.
+        rect.right extends into the air column. try_dig("down") must still work.
+        """
+        import constants as C
+        from player import Player
+        from tile import TileKind, make_ground
+        world, tx, surf = self._make_world_with_ledge()
+
+        p = Player(world)
+        # Right edge of player aligns with tile boundary (center over tx, right into tx+1 air)
+        p.rect.x = tx * C.TILE_SIZE + C.TILE_SIZE - C.PLAYER_WIDTH
+        p.rect.y = surf * C.TILE_SIZE - C.PLAYER_HEIGHT
+        p.pickaxe_level = 9
+
+        # Ensure the tile below tx is solid
+        world.set(tx, surf, make_ground(0))
+
+        p.try_dig("down")
+        tile_below = world.get(tx, surf)
+        assert tile_below.kind == TileKind.AIR, (
+            "Player at edge of ledge could not dig down – try_dig fell through to air column"
+        )
+
+    def test_dig_down_when_center_over_air_uses_foot_column(self):
+        """
+        Edge case: player's centerx is over an already-dug air column, but one foot
+        is still over a solid tile. dig-down should find the solid tile via foot column.
+        """
+        import constants as C
+        from player import Player
+        from tile import TileKind, make_air, make_ground
+        world, tx, surf = self._make_world_with_ledge()
+
+        # Dig center column open so centerx is over air
+        for dy in range(-2, 3):
+            world.set(tx, surf + dy, make_air())
+        # Keep left column (tx-1) solid at surf level
+        world.set(tx - 1, surf, make_ground(0))
+
+        p = Player(world)
+        # Position player so centerx lands on tx (air) but left side covers tx-1 (solid)
+        p.rect.x = (tx - 1) * C.TILE_SIZE + C.TILE_SIZE - C.PLAYER_WIDTH // 2
+        p.rect.y = surf * C.TILE_SIZE - C.PLAYER_HEIGHT
+        p.pickaxe_level = 9
+
+        p.try_dig("down")
+        tile_below = world.get(tx - 1, surf)
+        assert tile_below.kind == TileKind.AIR, (
+            "dig-down failed: when center is over air, foot column fallback did not work"
+        )
