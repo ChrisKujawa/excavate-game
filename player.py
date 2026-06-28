@@ -23,8 +23,13 @@ class Player:
         self.points: int = 0
         self.pickaxe_level: int = 1
         self.water_timer: int = 0
+        self.acid_timer: int = 0
         self.alive: bool = True
         self.won: bool = False
+
+        # Trail für Wurm-Verfolgung
+        self.trail: list[tuple[int, int]] = []
+        self._last_trail_pos: tuple[int, int] = (-9999, -9999)
 
         # Feedback-Text (kurz anzeigen)
         self.feedback_text: str = ""
@@ -43,6 +48,7 @@ class Player:
         self._move_vertical()
         self._check_tile_effects()
         self._check_upgrades()
+        self._record_trail()
 
         if self.feedback_timer > 0:
             self.feedback_timer -= 1
@@ -76,7 +82,7 @@ class Player:
 
         if tile.kind == TileKind.AIR:
             return 0
-        if tile.kind in (TileKind.WATER, TileKind.LAVA):
+        if tile.kind in (TileKind.WATER, TileKind.LAVA, TileKind.ACID):
             return 0
         if tile.hardness > self.pickaxe_level:
             self._show_feedback("Zu hart! (Level " + str(tile.hardness) + " nötig)")
@@ -166,7 +172,7 @@ class Player:
         return False
 
     # ------------------------------------------------------------------ #
-    #  Tile-Effekte (Wasser, Lava)                                        #
+    #  Tile-Effekte (Wasser, Lava, Säure)                                 #
     # ------------------------------------------------------------------ #
 
     def _check_tile_effects(self):
@@ -179,13 +185,23 @@ class Player:
             self._die()
         elif tile.kind == TileKind.WATER:
             self.water_timer += 1
+            self.acid_timer = 0
             if self.water_timer >= C.WATER_DAMAGE_INTERVAL:
                 self.water_timer = 0
                 self.hp -= 1
                 if self.hp <= 0:
                     self._die()
+        elif tile.kind == TileKind.ACID:
+            self.acid_timer += 1
+            self.water_timer = 0
+            if self.acid_timer >= C.ACID_DAMAGE_INTERVAL:
+                self.acid_timer = 0
+                self.hp -= 1
+                if self.hp <= 0:
+                    self._die()
         else:
             self.water_timer = 0
+            self.acid_timer = 0
 
     # ------------------------------------------------------------------ #
     #  Upgrades                                                            #
@@ -209,6 +225,18 @@ class Player:
     def _show_feedback(self, text: str):
         self.feedback_text = text
         self.feedback_timer = 90  # ~1.5 Sekunden bei 60 FPS
+
+    def _record_trail(self):
+        """Aktuelle Tile-Position zum Trail hinzufügen (nur bei Positionsänderung)."""
+        tx = self.rect.centerx // C.TILE_SIZE
+        ty = self.rect.centery // C.TILE_SIZE
+        pos = (tx, ty)
+        if pos != self._last_trail_pos:
+            self.trail.append(pos)
+            self._last_trail_pos = pos
+            # Trail auf max. 10000 Einträge begrenzen
+            if len(self.trail) > 10000:
+                self.trail = self.trail[-10000:]
 
     def depth(self) -> int:
         """Aktuelle Tiefe in Tiles."""

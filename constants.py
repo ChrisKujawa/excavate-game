@@ -60,6 +60,7 @@ CAVE_MAX_SIZE = 9
 COLOR_SKY        = (100, 160, 220)
 COLOR_WATER      = (30,  100, 200)
 COLOR_LAVA       = (220, 80,  0)
+COLOR_ACID       = (100, 200, 30)
 COLOR_PLAYER     = (255, 220, 50)
 COLOR_HUD_BG     = (0,   0,   0)
 COLOR_HUD_TEXT   = (255, 255, 255)
@@ -78,7 +79,24 @@ PLAYER_MAX_HP    = 5
 
 # Schaden
 WATER_DAMAGE_INTERVAL = 60
+ACID_DAMAGE_INTERVAL  = 30
 LAVA_DAMAGE            = 5
 
 # Kamera
 CAMERA_LAG = 0.1
+
+# Level-System
+MAX_LEVELS = 5
+# Diamant-Tiefe pro Level (Tile-Koordinaten)
+LEVEL_DIAMOND_DEPTHS = [50, 105, 160, 185, 195]
+# Zeitlimit pro Level (Sekunden)
+LEVEL_TIME_SECONDS = [120, 150, 180, 210, 240]
+# Welt-Starttiefe pro Level (Tiles)
+LEVEL_WORLD_DEPTHS = [80, 130, 185, 215, 225]
+
+# Wurm
+WORM_LEVEL_START = 3         # Ab welchem Level der Wurm erscheint
+WORM_START_DELAY = 600       # 10 Sekunden Vorsprung bei 60 FPS
+WORM_MOVE_INTERVAL = 12      # Frames zwischen Wurm-Schritten
+WORM_SIZE = 22               # Pixel-Größe des Wurm-Kopfs
+WORM_COLOR = (160, 80, 20)

@@ -91,10 +91,24 @@ class TestGameOverTransitions:
 
 
 class TestWinTransitions:
-    def test_diamond_found_triggers_win(self, game):
+    def test_diamond_found_triggers_level_complete(self, game):
+        """Finding diamond on level 1 → LEVEL_COMPLETE (not final win)."""
         game.state = GameState.PLAYING
+        game.level = 1
         game.player.won = True
-        game.player.points = 0  # ensure not a highscore
+        game.player.points = 0
+        with patch("highscore.is_highscore", return_value=False):
+            keys = pygame.key.get_pressed()
+            game._update(keys)
+        assert game.state == GameState.LEVEL_COMPLETE
+
+    def test_diamond_found_on_last_level_triggers_win(self, game):
+        """Finding diamond on MAX_LEVELS → WIN."""
+        import constants as C
+        game.state = GameState.PLAYING
+        game.level = C.MAX_LEVELS
+        game.player.won = True
+        game.player.points = 0
         with patch("highscore.is_highscore", return_value=False):
             keys = pygame.key.get_pressed()
             game._update(keys)

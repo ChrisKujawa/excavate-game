@@ -1,6 +1,6 @@
 """Tests für world.py – Welt-Generierung (unendliche Tiefe)."""
 import pytest
-from world import World, DIAMOND_DEPTH
+from world import World, diamond_depth_for_level, world_depth_for_level
 from tile import TileKind, make_water, make_lava, make_ground, make_air
 import constants as C
 
@@ -15,7 +15,7 @@ class TestWorldDimensions:
         assert world.width == C.WORLD_INITIAL_WIDTH
 
     def test_initial_depth(self, world):
-        assert world.max_ty == C.WORLD_INITIAL_DEPTH
+        assert world.max_ty == world_depth_for_level(1)
 
     def test_min_max_tx(self, world):
         half = C.WORLD_INITIAL_WIDTH // 2
@@ -39,13 +39,15 @@ class TestWorldSurface:
 
 class TestWorldDiamond:
     def test_diamond_exists_at_depth(self, world):
-        assert world.get(0, DIAMOND_DEPTH).kind == TileKind.DIAMOND
+        depth = diamond_depth_for_level(1)
+        assert world.get(0, depth).kind == TileKind.DIAMOND
 
     def test_diamond_cluster(self, world):
+        depth = diamond_depth_for_level(1)
         count = sum(
             1 for dy in range(-1, 2)
             for dx in range(-1, 2)
-            if world.get(dx, DIAMOND_DEPTH + dy).kind == TileKind.DIAMOND
+            if world.get(dx, depth + dy).kind == TileKind.DIAMOND
         )
         assert count == 9
 
@@ -130,18 +132,18 @@ class TestCaveDepthScaling:
         w = World(seed=1)
         weights = w._cave_weights(0)
         # empty >> lava near surface
-        assert weights[0] > weights[2]   # empty > lava
+        assert weights[0] > weights[1]   # empty > lava
 
     def test_deep_mostly_lava(self):
         w = World(seed=1)
         weights = w._cave_weights(300)
         # lava >> empty deep down
-        assert weights[2] > weights[0]   # lava > empty
+        assert weights[1] > weights[0]   # lava > empty
 
     def test_weights_increase_with_depth(self):
         w = World(seed=1)
-        shallow_lava = w._cave_weights(10)[2]
-        deep_lava    = w._cave_weights(200)[2]
+        shallow_lava = w._cave_weights(10)[1]
+        deep_lava    = w._cave_weights(200)[1]
         assert deep_lava > shallow_lava
 
     def test_weights_always_positive(self):
@@ -203,13 +205,6 @@ class TestFluidSimulation:
                 w.set(tx, ty, make_air())
         return w
 
-    def test_water_falls_into_air_below(self):
-        w = self._make_fresh_world()
-        w.set(5, 10, make_water())
-        w.tick_fluids()
-        assert w.get(5, 11).kind == TileKind.WATER
-        assert w.get(5, 10).kind == TileKind.AIR
-
     def test_lava_falls_into_air_below(self):
         w = self._make_fresh_world()
         w.set(5, 10, make_lava())
@@ -219,24 +214,24 @@ class TestFluidSimulation:
 
     def test_fluid_does_not_fall_through_solid(self):
         w = self._make_fresh_world()
-        w.set(5, 10, make_water())
+        w.set(5, 10, make_lava())
         w.set(5, 11, make_ground(0))
         w.tick_fluids()
-        assert w.get(5, 10).kind == TileKind.WATER
+        assert w.get(5, 10).kind == TileKind.LAVA
         assert w.get(5, 11).kind == TileKind.GROUND
 
     def test_fluid_falls_multiple_tiles(self):
         w = self._make_fresh_world()
-        w.set(5, 10, make_water())
+        w.set(5, 10, make_lava())
         for _ in range(5):
             w.tick_fluids()
         assert w.get(5, 10).kind == TileKind.AIR
-        assert w.get(5, 15).kind == TileKind.WATER
+        assert w.get(5, 15).kind == TileKind.LAVA
 
-    def test_water_stays_if_no_air_below(self):
+    def test_lava_stays_if_no_air_below(self):
         w = self._make_fresh_world()
-        w.set(5, 10, make_water())
+        w.set(5, 10, make_lava())
         for ty in range(11, 20):
             w.set(5, ty, make_ground(0))
         w.tick_fluids()
-        assert w.get(5, 10).kind == TileKind.WATER
+        assert w.get(5, 10).kind == TileKind.LAVA
