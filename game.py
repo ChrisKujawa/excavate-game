@@ -148,10 +148,18 @@ class Game:
                 keys = _KeysWithTouch(pygame.key.get_pressed(), self.touch)
                 self._update(keys)
                 self._draw()
-                # Blit offscreen surface to the display and present
+                # Present: scale offscreen surface to the display.
+                # In windowed mode sizes match → plain blit.
+                # In fullscreen the display is the monitor's native resolution
+                # so we scale to fill it (letterbox-free stretch).
                 display = pygame.display.get_surface()
                 if display is not None:
-                    display.blit(self.screen, (0, 0))
+                    dw, dh = display.get_size()
+                    sw, sh = self.screen.get_size()
+                    if (dw, dh) != (sw, sh):
+                        pygame.transform.scale(self.screen, (dw, dh), display)
+                    else:
+                        display.blit(self.screen, (0, 0))
                 pygame.display.flip()
             except Exception as e:
                 import traceback
