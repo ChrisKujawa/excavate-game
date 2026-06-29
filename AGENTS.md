@@ -209,3 +209,16 @@ Do **not** remove the `async`/`await` pattern.
 - Tests live in `tests/`, must be named `test_*.py`
 - Use `conftest.py` fixtures for pygame init — don't init pygame manually in tests
 - Run: `pytest tests/ -v` from repo root
+
+---
+
+## Testing Convention
+
+**Every new feature and every bug fix must include tests.**
+
+- New feature → add tests that verify the expected behaviour
+- Bug fix → add a test that would have caught the bug (regression test)
+- Tests must pass before committing: `pytest tests/ -v`
+- Do not reduce or remove existing tests — if a refactor breaks a test, fix the code, not the test
+
+This keeps the test suite meaningful and prevents regressions as the game grows.
